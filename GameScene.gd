@@ -13,6 +13,18 @@ var infected_countries: Array[String] = ["RUSSIA", "CHINA", "INDIA"] # Example s
 var is_dragging: bool = false
 var last_mouse_pos: Vector2
 
+var hover_sprite: Sprite2D
+var country_hover_images: Dictionary = {
+    "CHINA": "res://Assets/ASIAMAP_REALISTIC_CHINA.png",
+    "INDIA": "res://Assets/ASIAMAP_REALISTIC_INDIA.png",
+    "RUSSIA": "res://Assets/ASIAMAP_REALISTIC_RUSSIA.png",
+    "MONGOLIA": "res://Assets/ASIAMAP_REALISTIC_MONGOLIA.png",
+    "KAZAKHSTAN": "res://Assets/ASIAMAP_REALISTIC_MAP_KAZAKHSTAN.png",
+    "PHILIPPINES": "res://Assets/ASIAMAP_REALISTIC_MAP_PHILIPPINES.png",
+    "SAUDIARABIA": "res://Assets/ASIAMAP_REALISTIC_MAP_SAUDIARABIA.png"
+}
+var country_hover_textures: Dictionary = {}
+
 func _ready():
     # Load the Color ID map directly as an Image to bypass texture compression artifacts
     color_id_image = Image.load_from_file("res://Assets/ColorIDMap.png")
@@ -32,6 +44,19 @@ func _ready():
             if country_name in infected_countries:
                 for i in range(50):
                     spawn_dot_in_country(country_name)
+                    
+    # Preload hover textures
+    for country in country_hover_images:
+        var tex = load(country_hover_images[country])
+        if tex:
+            country_hover_textures[country] = tex
+            
+    # Setup hover sprite
+    hover_sprite = Sprite2D.new()
+    hover_sprite.centered = false
+    map_sprite.add_child(hover_sprite)
+    map_sprite.move_child(hover_sprite, 0) # Draw behind DotRenderer
+    hover_sprite.hide()
     
     # Start infection timer
     var timer = Timer.new()
@@ -83,10 +108,17 @@ func _check_hover(_screen_pos: Vector2):
         var pixel_color = color_id_image.get_pixelv(local_pos_i)
         var html_color = pixel_color.to_html(false)
         if country_colors.has(html_color):
-            hover_label.text = country_colors[html_color]
+            var country = country_colors[html_color]
+            hover_label.text = country
+            if country_hover_textures.has(country):
+                hover_sprite.texture = country_hover_textures[country]
+                hover_sprite.show()
+            else:
+                hover_sprite.hide()
             return
             
     hover_label.text = ""
+    hover_sprite.hide()
 
 func _on_infection_tick():
     # Pick a random infected country and spawn a dot
