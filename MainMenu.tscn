@@ -1,0 +1,213 @@
+[gd_scene load_steps=16 format=3 uid="uid://cmywriryfarbj"]
+
+[ext_resource type="Script" path="res://MainMenu.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://cqh3k3454xuxx" path="res://Assets/BACKGROUND_1.png" id="2_bg1"]
+[ext_resource type="Texture2D" uid="uid://bex4ubukuupen" path="res://Assets/START.png" id="3_start"]
+[ext_resource type="Texture2D" uid="uid://db5x7ensr4p5n" path="res://Assets/BACKGROUND_2.png" id="4_bg2"]
+[ext_resource type="Texture2D" uid="uid://cd5talxemgwy3" path="res://Assets/YES.png" id="5_yes"]
+[ext_resource type="Texture2D" uid="uid://dtod8ktjkq10b" path="res://Assets/NO.png" id="6_no"]
+[ext_resource type="Texture2D" uid="uid://cx68vw378hdso" path="res://Assets/BACKGROUND_3.png" id="7_bg3"]
+[ext_resource type="Texture2D" uid="uid://dnj4bafx6pjmg" path="res://Assets/NEXT.png" id="8_next"]
+[ext_resource type="Texture2D" uid="uid://d3ir76kyy5anv" path="res://Assets/BACKGROUND_4.png" id="9_bg4"]
+[ext_resource type="Texture2D" uid="uid://thosvm616jg" path="res://Assets/BUTTON FOR ENTER.png" id="10_enter"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_start"]
+atlas = ExtResource("3_start")
+region = Rect2(205, 362, 1510, 356)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_yes"]
+atlas = ExtResource("5_yes")
+region = Rect2(224, 366, 1472, 348)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_no"]
+atlas = ExtResource("6_no")
+region = Rect2(290, 382, 1340, 316)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_next"]
+atlas = ExtResource("8_next")
+region = Rect2(172, 362, 1509, 356)
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_enter"]
+atlas = ExtResource("10_enter")
+region = Rect2(272, 482, 1425, 116)
+
+[node name="MainMenu" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_script")
+
+[node name="Screen1" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="Screen1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_bg1")
+expand_mode = 1
+
+[node name="StartButton" type="TextureButton" parent="Screen1"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -278.0
+offset_top = -18.0
+offset_right = 285.0
+offset_bottom = 104.0
+grow_horizontal = 2
+grow_vertical = 2
+texture_normal = SubResource("AtlasTexture_start")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Screen2" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="Screen2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("4_bg2")
+expand_mode = 1
+
+[node name="YesButton" type="TextureButton" parent="Screen2"]
+layout_mode = 0
+offset_left = 214.0
+offset_top = 789.0
+offset_right = 867.0
+offset_bottom = 937.0
+texture_normal = SubResource("AtlasTexture_yes")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="NoButton" type="TextureButton" parent="Screen2"]
+layout_mode = 0
+offset_left = 1056.0
+offset_top = 784.0
+offset_right = 1717.0
+offset_bottom = 941.0
+texture_normal = SubResource("AtlasTexture_no")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Screen3" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="Screen3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("7_bg3")
+expand_mode = 1
+
+[node name="NextButton" type="TextureButton" parent="Screen3"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -70.0
+offset_right = 300.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+texture_normal = SubResource("AtlasTexture_next")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="Screen4" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="Screen4"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("9_bg4")
+expand_mode = 1
+
+[node name="EnterPrompt" type="TextureRect" parent="Screen4"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -600.0
+offset_top = -50.0
+offset_right = 600.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = SubResource("AtlasTexture_enter")
+expand_mode = 1
+
+[node name="TextCover" type="ColorRect" parent="Screen4/EnterPrompt"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 52.0
+offset_top = 20.0
+offset_right = -68.0
+offset_bottom = -14.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.447059, 0.0392157, 0.0392157, 1)
+
+[node name="VirusNameInput" type="LineEdit" parent="Screen4/EnterPrompt"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 107.0
+offset_top = 13.0
+offset_right = -148.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 48
+alignment = 1
+flat = true
