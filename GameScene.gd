@@ -26,8 +26,10 @@ var country_hover_images: Dictionary = {
 var country_hover_textures: Dictionary = {}
 
 func _ready():
-    # Load the Color ID map directly as an Image to bypass texture compression artifacts
-    color_id_image = Image.load_from_file("res://Assets/ColorIDMap.png")
+    # Load the Color ID map texture and extract the image data to bypass export issues
+    var texture = load("res://Assets/ColorIDMap.png")
+    if texture:
+        color_id_image = texture.get_image()
     
     # Load country data JSON
     var file = FileAccess.open("res://Assets/country_data.json", FileAccess.READ)
