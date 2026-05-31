@@ -10,9 +10,9 @@
 [ext_resource type="Texture2D" uid="uid://bb5jv8dxkslct" path="res://Assets/HUD_DetectionFill.png" id="hud_detection_fill"]
 [ext_resource type="Texture2D" uid="uid://b68wmbml4n3fh" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
 [ext_resource type="Texture2D" uid="uid://docx3op0eglqc" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
-[ext_resource type="Texture2D" uid="uid://bm7vrn6jnhrgh" path="res://Assets/COMPS WITH THE IMPPROVING.png" id="tex_comps"]
-[ext_resource type="Texture2D" uid="uid://drhfow1s03uli" path="res://Assets/COMPUTER.png" id="tex_computer"]
-[ext_resource type="Texture2D" path="res://Assets/COMPS WITH THE IMPPROVING .png" id="tex_comps_overlay"]
+[ext_resource type="Texture2D" uid="uid://cjnhs0cij0qba" path="res://Assets/COMPS WITH THE IMPPROVING .png" id="tex_comps_overlay"]
+[ext_resource type="Texture2D" uid="uid://cvoumtff66nq2" path="res://Assets/COMPUTER.png" id="tex_computer"]
+[ext_resource type="Texture2D" path="res://Assets/IMPROVING.png" id="tex_improving"]
 
 [node name="GameScene" type="Node2D"]
 script = ExtResource("1_script")
@@ -342,13 +342,13 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -400.0
-offset_top = -280.0
-offset_right = 400.0
-offset_bottom = 220.0
+offset_left = -340.0
+offset_top = -320.0
+offset_right = 340.0
+offset_bottom = 140.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("tex_comps_overlay")
+texture = ExtResource("tex_improving")
 expand_mode = 1
 stretch_mode = 5
 
@@ -356,11 +356,11 @@ stretch_mode = 5
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_top = 40.0
-offset_bottom = 70.0
+offset_top = 20.0
+offset_bottom = 50.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0, 1, 0, 1)
-theme_override_font_sizes/font_size = 24
+theme_override_font_sizes/font_size = 28
 text = "VIRUS UPGRADE TERMINAL"
 horizontal_alignment = 1
 
@@ -369,12 +369,13 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -60.0
-offset_top = 30.0
-offset_right = -30.0
-offset_bottom = 60.0
+offset_left = -40.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 40.0
 grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
 text = "X"
 flat = true
 
@@ -385,14 +386,14 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -350.0
+offset_left = -280.0
 offset_top = -140.0
-offset_right = 350.0
-offset_bottom = 240.0
+offset_right = 280.0
+offset_bottom = 200.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/h_separation = 40
-theme_override_constants/v_separation = 30
+theme_override_constants/h_separation = 30
+theme_override_constants/v_separation = 20
 columns = 2
 
 [node name="VBoxTrans" type="VBoxContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"]
