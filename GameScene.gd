@@ -146,6 +146,7 @@ func _ready():
 	# Init GA
 	_ga_init_population()
 	_setup_dynamic_ui()
+	_connect_terminal_buttons()
 	
 	# Hide end screen
 	if end_screen:
@@ -696,6 +697,36 @@ func buy_upgrade(upgrade_id: String):
 		await get_tree().create_timer(0.4).timeout
 		crt_monitor.hide()
 
+func _connect_terminal_buttons():
+	var map = {
+		"BtnEmail":      "email_phishing",
+		"BtnCloud":      "cloud_exploit",
+		"BtnObfuscation":"code_obfuscation",
+		"BtnFileless":   "fileless_malware",
+		"BtnRegistry":   "registry_persist",
+		"BtnAntiAV":     "anti_antivirus",
+		"BtnKeylogger":  "keylogger",
+		"BtnRansomware": "ransomware",
+	}
+	var base = "CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"
+	for btn_name in map:
+		var upg_id = map[btn_name]
+		var paths = [
+			base + "/VBoxTrans/" + btn_name,
+			base + "/VBoxStealth/" + btn_name,
+			base + "/VBoxResist/" + btn_name,
+			base + "/VBoxPayload/" + btn_name,
+		]
+		for path in paths:
+			if has_node(path):
+				var b = get_node(path)
+				if b.pressed.is_connected(self._on_terminal_btn_pressed):
+					b.pressed.disconnect(self._on_terminal_btn_pressed)
+				b.pressed.connect(self._on_terminal_btn_pressed.bind(upg_id))
+
+func _on_terminal_btn_pressed(upg_id: String):
+	buy_upgrade(upg_id)
+
 func _refresh_terminal_buttons():
 	# Update each button label so bought upgrades show [OWNED]
 	var map = {
@@ -753,7 +784,8 @@ func _check_win_lose():
 		return
 	
 	# If all countries patched and 0 infected — player loses (virus contained)
-	if infected_countries.size() == 0 and patched_countries.size() >= TOTAL_COUNTRIES:
+	# Also, if virus is fully eradicated before infecting all, it's a loss (no soft-lock)
+	if infected_countries.size() == 0 and turn_count > 2:
 		_end_game(false)
 		return
 	
