@@ -1,66 +1,21 @@
-[gd_scene load_steps=4 format=3 uid="uid://dgame1234567"]
+import sys
 
-[ext_resource type="Script" path="res://GameScene.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://Assets/ASIAMAP_REALISTIC.png" id="2_map"]
-[ext_resource type="Script" path="res://DotRenderer.gd" id="3_dot"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_BarBG.png" id="hud_bar_bg"]
+with open('GameScene.tscn', 'r') as f:
+    content = f.read()
+
+ext_resources = '''[ext_resource type="Texture2D" path="res://Assets/HUD_BarBG.png" id="hud_bar_bg"]
 [ext_resource type="Texture2D" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
 [ext_resource type="Texture2D" path="res://Assets/HUD_DetectionFill.png" id="hud_detection_fill"]
 [ext_resource type="Texture2D" path="res://Assets/HUD_Btn_Speed.png" id="hud_btn_speed"]
 [ext_resource type="Texture2D" path="res://Assets/HUD_Btn_Stealth.png" id="hud_btn_stealth"]
 [ext_resource type="Texture2D" path="res://Assets/HUD_Btn_Resistance.png" id="hud_btn_resistance"]
 [ext_resource type="Texture2D" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
+'''
+content = content.replace('[ext_resource type="Script" path="res://DotRenderer.gd" id="3_dot"]', '[ext_resource type="Script" path="res://DotRenderer.gd" id="3_dot"]\n' + ext_resources)
 
-
-[node name="GameScene" type="Node2D"]
-script = ExtResource("1_script")
-
-[node name="BackgroundLayer" type="CanvasLayer" parent="."]
-layer = -1
-
-[node name="Ocean" type="ColorRect" parent="BackgroundLayer"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-color = Color(0.101961, 0.168627, 0.298039, 1)
-
-[node name="Camera2D" type="Camera2D" parent="."]
-position = Vector2(960, 540)
-zoom = Vector2(1.0, 1.0)
-limit_left = 0
-limit_top = 0
-limit_right = 1920
-limit_bottom = 1080
-
-[node name="MapSprite" type="Sprite2D" parent="."]
-texture = ExtResource("2_map")
-centered = false
-
-[node name="DotRenderer" type="Node2D" parent="MapSprite"]
-script = ExtResource("3_dot")
-
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="Panel" type="Panel" parent="CanvasLayer"]
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 60.0
-grow_horizontal = 2
-mouse_filter = 2
-
-[node name="HoverLabel" type="Label" parent="CanvasLayer"]
-anchors_preset = 10
-anchor_right = 1.0
-offset_top = 10.0
-offset_bottom = 50.0
-grow_horizontal = 2
-theme_override_font_sizes/font_size = 32
-horizontal_alignment = 1
-
-[node name="HUD" type="Control" parent="CanvasLayer"]
+start_idx = content.find('[node name="HUD" type="Control" parent="CanvasLayer"]')
+if start_idx != -1:
+    new_hud = '''[node name="HUD" type="Control" parent="CanvasLayer"]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -188,71 +143,6 @@ offset_right = 880.0
 offset_bottom = 110.0
 texture_normal = ExtResource("hud_btn_resistance")
 
-[node name="NotificationLabel" type="Label" parent="CanvasLayer/HUD"]
-layout_mode = 1
-anchors_preset = 5
-anchor_left = 0.5
-anchor_right = 0.5
-offset_left = -200.0
-offset_top = 200.0
-offset_right = 200.0
-offset_bottom = 234.0
-grow_horizontal = 2
-theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
-theme_override_font_sizes/font_size = 24
-horizontal_alignment = 1
-
-[node name="EventLog" type="Panel" parent="CanvasLayer/HUD"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 1.0
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -970.0
-offset_top = -420.0
-offset_right = -20.0
-offset_bottom = -140.0
-grow_horizontal = 0
-grow_vertical = 0
-
-[node name="BG" type="ColorRect" parent="CanvasLayer/HUD/EventLog"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.039, 0.031, 0.031, 0.784)
-
-[node name="EventText" type="RichTextLabel" parent="CanvasLayer/HUD/EventLog"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_font_sizes/normal_font_size = 13
-theme_override_font_sizes/bold_font_size = 13
-theme_override_font_sizes/italics_font_size = 13
-theme_override_font_sizes/bold_italics_font_size = 13
-theme_override_font_sizes/mono_font_size = 13
-bbcode_enabled = true
-scroll_following = true
-
-[node name="TraitsLabel" type="Label" parent="CanvasLayer/HUD/BottomPanel"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = -20.0
-offset_right = 400.0
-offset_bottom = 10.0
-theme_override_colors/font_color = Color(0, 1, 0, 1)
-text = "SPD: 1 | STL: 1 | RES: 1"
-
 [node name="EndScreen" type="Control" parent="CanvasLayer"]
 visible = false
 layout_mode = 3
@@ -292,3 +182,11 @@ text = "GAME OVER"
 [connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnSpeed" to="." method="_on_btn_speed_pressed"]
 [connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnStealth" to="." method="_on_btn_stealth_pressed"]
 [connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnResistance" to="." method="_on_btn_resistance_pressed"]
+'''
+    content = content[:start_idx] + new_hud
+    
+    with open('GameScene.tscn', 'w') as f:
+        f.write(content)
+    print('Updated GameScene.tscn')
+else:
+    print('HUD node not found!')

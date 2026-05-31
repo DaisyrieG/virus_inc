@@ -1,0 +1,77 @@
+import sys
+
+with open('GameScene.tscn', 'r') as f:
+    content = f.read()
+
+new_nodes = """[node name="NotificationLabel" type="Label" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 200.0
+offset_right = 200.0
+offset_bottom = 234.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+
+[node name="EventLog" type="Panel" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -970.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -140.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="BG" type="ColorRect" parent="CanvasLayer/HUD/EventLog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.039, 0.031, 0.031, 0.784)
+
+[node name="EventText" type="RichTextLabel" parent="CanvasLayer/HUD/EventLog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/normal_font_size = 13
+theme_override_font_sizes/bold_font_size = 13
+theme_override_font_sizes/italics_font_size = 13
+theme_override_font_sizes/bold_italics_font_size = 13
+theme_override_font_sizes/mono_font_size = 13
+bbcode_enabled = true
+scroll_following = true
+
+[node name="TraitsLabel" type="Label" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = -20.0
+offset_right = 400.0
+offset_bottom = 10.0
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "SPD: 1 | STL: 1 | RES: 1"
+
+"""
+
+content = content.replace('[node name="EndScreen" type="Control" parent="CanvasLayer"]', new_nodes + '[node name="EndScreen" type="Control" parent="CanvasLayer"]')
+
+with open('GameScene.tscn', 'w') as f:
+    f.write(content)
+print("Updated GameScene.tscn with NotificationLabel and EventLog")
