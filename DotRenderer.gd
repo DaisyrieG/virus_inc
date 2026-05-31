@@ -22,6 +22,7 @@ func add_dot(pos: Vector2, country: String):
 	# Cap at 200 dots per country to avoid lag
 	if country_dots[country].size() > 200:
 		country_dots[country].pop_front()
+	queue_redraw()
 		
 func _draw():
 	if not _font:
