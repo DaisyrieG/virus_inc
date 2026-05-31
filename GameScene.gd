@@ -665,8 +665,7 @@ func _refresh_terminal_buttons():
 					btn.text = label + " [OWNED]"
 					btn.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
 				elif not afford:
-					btn.text = label + " [%d] (need %d)"\
-						.arg(cost).arg(cost - resources)
+					btn.text = (label + " [%d] (need %d more)") % [cost, cost - resources]
 					btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 				else:
 					btn.text = label + " [%d]" % cost
