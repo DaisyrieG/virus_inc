@@ -161,7 +161,7 @@ func _ready():
 	
 	# ── TURN TIMER (game logic — every 2s) ───────────────────────
 	var turn_timer = Timer.new()
-	turn_timer.wait_time = 2.0
+	turn_timer.wait_time = 3.5  # 3.5s per turn gives the player time to react
 	turn_timer.autostart = true
 	turn_timer.timeout.connect(_on_turn_tick)
 	add_child(turn_timer)
@@ -266,32 +266,20 @@ func _on_turn_tick():
 	
 	# ══════════════ DEFENSE SIDE — THE FIGHT ══════════════
 	
-	# Detection rises every turn (stealth slows it down)
-	var stealth_mod = 1.0 - clampf(virus_stealth * 0.07, 0.0, 0.7)
+	# Detection rises every turn based on how many countries are infected
+	# Stealth upgrades slow this down
+	var stealth_mod = 1.0 - clampf(virus_stealth * 0.06, 0.0, 0.6)
 	if upgrades["code_obfuscation"]["bought"]:
-		stealth_mod *= 0.7
+		stealth_mod *= 0.75
 	if upgrades["fileless_malware"]["bought"]:
-		stealth_mod *= 0.5
-	detection_level = clampf(detection_level + 0.004 * stealth_mod, 0.0, 1.0)
+		stealth_mod *= 0.55
+	# Detection grows proportional to how many countries are infected
+	var spread_factor = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
+	detection_level = clampf(detection_level + (0.012 + spread_factor * 0.015) * stealth_mod, 0.0, 1.0)
 	
-	# Defense AI gets MORE AGGRESSIVE as detection rises
-	# Below 20% — no defense (player has a head start to build up)
-	# 20-50% — defense checks once per turn
-	# 50-75% — defense checks twice per turn  
-	# 75%+   — defense checks THREE times per turn (panic mode!)
-	
-	if detection_level >= 0.75:
-		log_event("CRITICAL: Defense in MAXIMUM ALERT!", "red")
-		if turn_count % 2 == 0:
-			_bayesian_defense()
-	elif detection_level >= 0.50:
-		log_event("WARNING: Defense increasing patrols!", "orange")
-		if turn_count % 3 == 0:
-			_bayesian_defense()
-	elif detection_level >= 0.20:
-		if turn_count % 5 == 0:
-			_bayesian_defense()
-	# Below 20% = free reign, no defense yet
+	# Bayesian Defense AI — runs every turn, but only patches when confident
+	# The AI always OBSERVES (updates its suspicion), but only ACTS when sure
+	_bayesian_defense()
 	
 	# Detection milestone warnings
 	if turn_count == 1:
@@ -331,10 +319,12 @@ func _dijkstra_spread():
 		return
 	
 	# Spread chance scales with Speed
-	# Speed 1 → 8%, Speed 10 → 44%
-	var spread_chance = 0.08 + (virus_speed - 1.0) * 0.04
+	# Speed 1 → 20%, Speed 5 → 40%, Speed 10 → 65%
+	# But capped so low speed is genuinely slow (tension!)
+	var spread_chance = 0.20 + (virus_speed - 1.0) * 0.05
 	
 	if randf() > spread_chance:
+		defense_log_event("Spread attempt blocked...", "gray")
 		return  # No spread this turn
 	
 	# Run Dijkstra with dynamic weights
@@ -351,10 +341,12 @@ func _dijkstra_spread():
 	if targets.size() == 0:
 		return
 	
-	# How many countries can we infect this turn?
-	# Speed 1-3 → 1, Speed 4-6 → 2, Speed 7-10 → 3
+	# Hard cap: can only infect 1 country per turn at low speed
+	# Speed 1-4 → 1, Speed 5-8 → 2, Speed 9-10 → 3
 	# Cloud exploit adds +1
-	var max_spread = int(clampf(virus_speed / 3.5, 1, 3))
+	var max_spread = 1
+	if virus_speed >= 5.0: max_spread = 2
+	if virus_speed >= 9.0: max_spread = 3
 	if upgrades["cloud_exploit"]["bought"]:
 		max_spread += 1
 	
@@ -404,88 +396,115 @@ func _dijkstra_spread():
 # - Spreading FAST enough to outrun the defense
 # ═════════════════════════════════════════════════════════════════
 
-const PATCH_THRESHOLD: float = 0.85
-const P_SIGNAL_INFECTED: float = 0.70
-const P_SIGNAL_NOT_INFECTED: float = 0.30
+# Bayesian Defense constants
+# The AI needs THIS much certainty before it dares to patch
+const PATCH_THRESHOLD: float = 0.75
+# How strongly an infected country broadcasts its signal
+const P_SIGNAL_INFECTED: float = 0.82
+const P_SIGNAL_NOT_INFECTED: float = 0.18
+# How fast the prior decays for clean countries (keeps suspicion from lingering)
+const BAYES_DECAY: float = 0.08
 
 func _bayesian_defense():
+	# ── KEY FIX: The AI remembers suspicion across turns ──
+	# country_detection starts at 0.05 for every country.
+	# Each turn it UPDATES that suspicion using Bayes — it accumulates!
+	# After enough turns of infection signal, it hits PATCH_THRESHOLD.
+	
 	var best_target = ""
 	var best_posterior = 0.0
 	
 	for country in world_graph.keys():
 		if country in patched_countries:
+			# Patched countries slowly lose suspicion
+			country_detection[country] = maxf(0.01, country_detection.get(country, 0.01) - 0.02)
 			continue
 		
 		# ── OBSERVE: infected countries emit suspicious signals ───
-		var signal_strength = _observe_signal(country)
+		var signal = _observe_signal(country)
 		
-		# ── BAYES UPDATE: calculate P(Infected | Signal) ─────────
+		# ── BAYES UPDATE: P(Infected | Signal) using prior from LAST TURN ─
+		# This is the KEY: prior = what we thought last turn
+		# posterior = what we think now after seeing the new signal
 		var prior = country_detection.get(country, 0.05)
-		var p_s_i = lerpf(0.0, P_SIGNAL_INFECTED, signal_strength)
-		var p_s_ni = lerpf(0.0, P_SIGNAL_NOT_INFECTED, signal_strength)
+		var p_s_i   = P_SIGNAL_INFECTED * signal
+		var p_s_ni  = P_SIGNAL_NOT_INFECTED * signal
 		var numerator = p_s_i * prior
-		var evidence = numerator + p_s_ni * (1.0 - prior)
-		var posterior = numerator / evidence if evidence > 0 else prior
+		var evidence  = numerator + p_s_ni * (1.0 - prior)
+		var posterior = numerator / evidence if evidence > 0.001 else prior
 		
+		# Clamp to avoid floating point edge cases
+		posterior = clampf(posterior, 0.01, 0.99)
+		
+		# Decay clean countries (suspicion fades if no signal)
+		if country not in infected_countries:
+			posterior = maxf(0.01, posterior - BAYES_DECAY)
+		
+		# SAVE IT — this is the prior for NEXT turn (memory!)
 		country_detection[country] = posterior
 		
-		# Decay non-suspicious countries
-		if posterior < PATCH_THRESHOLD * 0.4:
-			country_detection[country] = maxf(0.01, posterior - 0.02)
+		# Log scanning activity in the defense panel
+		if posterior >= 0.40 and country in infected_countries:
+			defense_log_event("Scanning %s... P=%.0f%%" % [country, posterior * 100], "yellow")
 		
-		# Find the most suspicious infected country
-		if posterior > best_posterior and country in infected_countries:
+		# Track the most suspicious infected country to potentially patch
+		if country in infected_countries and posterior > best_posterior:
 			best_posterior = posterior
 			best_target = country
 	
-	# ── PATCH: if confident enough, remove the infection! ────────
+	# ── PATCH: only when the AI is 75% confident ─────────────────────
 	if best_target != "" and best_posterior >= PATCH_THRESHOLD:
 		
 		# RESISTANCE CHECK — virus might survive the patch!
-		var resist_chance = virus_resistance * 0.07
+		var resist_chance = clampf(virus_resistance * 0.06, 0.0, 0.55)
 		if upgrades["registry_persist"]["bought"]:
 			resist_chance += 0.15
 		if upgrades["anti_antivirus"]["bought"]:
 			resist_chance += 0.25
 		
 		if randf() < resist_chance:
-			# VIRUS RESISTED!
 			log_event("Defense tried to patch %s — VIRUS RESISTED! (%.0f%%)" % [
 				best_target, resist_chance * 100], "orange")
-			defense_log_event("Patch FAILED — virus resisted ✗", "orange")
-			show_notification("RESISTED PATCH: " + best_target, Color(1.0, 0.6, 0.1))
+			defense_log_event("[!] %s resisted patch (%.0f%%)" % [best_target, resist_chance*100], "orange")
+			show_notification("PATCH RESISTED: " + best_target, Color(1.0, 0.6, 0.1))
+			# Reset this country's posterior so AI has to build confidence again
+			country_detection[best_target] = 0.30
 			return
 		
 		# ── THE PATCH HAPPENS — player LOSES this country ────────
 		infected_countries.erase(best_target)
 		patched_countries.append(best_target)
 		total_patches += 1
-		defense_log_event("PATCHED %s ✓" % best_target, "green")
-		detection_level = clampf(detection_level + 0.03, 0.0, 1.0)
+		# Reset posterior so if reinfected it must build suspicion again
+		country_detection[best_target] = 0.05
 		
-		# CLEAR THE DOTS — visually show the country is cured
+		defense_log_event("[✓] PATCHED %s! P was %.0f%%" % [best_target, best_posterior * 100], "lime")
+		detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
+		
 		_clear_dots_in_country(best_target)
 		
-		log_event("SECURED: %s — defense contained the virus! (P=%.0f%%)" % [
+		log_event("SECURED: %s — Bayesian AI patched it! (P=%.0f%%)" % [
 			best_target, best_posterior * 100], "green")
 		show_notification("COUNTRY SECURED: " + best_target, Color(0.2, 0.9, 0.3))
 		
-		# Tell the player what happened
-		if infected_countries.size() == 0 and patched_countries.size() > 0:
-			log_event("ALL COUNTRIES PATCHED! Spread faster or upgrade resistance!", "red")
+		if infected_countries.size() == 0:
+			log_event("ALL COUNTRIES PATCHED — spread faster or upgrade!", "red")
 			show_notification("ALL INFECTIONS CLEARED!", Color(1, 0.2, 0.2))
 
 func _observe_signal(country: String) -> float:
-	var stealth_mod = 1.0 - clampf(virus_stealth * 0.07, 0.0, 0.7)
+	# Stealth reduces the strength of the infection signal
+	var stealth_mod = 1.0 - clampf(virus_stealth * 0.06, 0.0, 0.65)
 	if upgrades["fileless_malware"]["bought"]:
-		stealth_mod *= 0.5  # Fileless malware halves signal
+		stealth_mod *= 0.45
 	if upgrades["code_obfuscation"]["bought"]:
-		stealth_mod *= 0.7  # Code obfuscation reduces signal
+		stealth_mod *= 0.65
 	
 	if country in infected_countries:
-		return randf_range(0.4, 1.0) * stealth_mod
+		# Infected countries emit a strong signal — but stealth reduces it
+		return randf_range(0.5, 1.0) * stealth_mod
 	else:
-		return randf_range(0.0, 0.2)
+		# Clean countries emit almost no signal (some noise)
+		return randf_range(0.0, 0.10)
 
 func _clear_dots_in_country(_country: String):
 	dot_renderer.clear_dots_in_country(_country)
@@ -516,31 +535,28 @@ func _ga_evolve():
 	var next: Array = [ga_population[0].duplicate(), ga_population[1].duplicate()]
 	
 	while next.size() < GA_POP_SIZE:
-		# Tournament select parents
 		var pa = _ga_pick_parent()
 		var pb = _ga_pick_parent()
-		# Crossover
 		var child = {"speed": pa["speed"], "stealth": pb["stealth"], "resistance": pa["resistance"]}
-		# Mutate
 		if randf() < GA_MUTATION_RATE:
-			child["speed"] = clampf(child["speed"] + randf_range(-0.1, 0.15), 1.0, 10.0)
+			child["speed"] = clampf(child["speed"] + randf_range(-0.05, 0.12), 1.0, 10.0)
 		if randf() < GA_MUTATION_RATE:
-			child["stealth"] = clampf(child["stealth"] + randf_range(-0.1, 0.15), 1.0, 10.0)
+			child["stealth"] = clampf(child["stealth"] + randf_range(-0.05, 0.12), 1.0, 10.0)
 		if randf() < GA_MUTATION_RATE:
-			child["resistance"] = clampf(child["resistance"] + randf_range(-0.1, 0.15), 1.0, 10.0)
+			child["resistance"] = clampf(child["resistance"] + randf_range(-0.05, 0.12), 1.0, 10.0)
 		next.append(child)
 	
 	ga_population = next
 	
-	# Apply best genome (GA auto-evolves ON TOP of player upgrades)
-	var best = ga_population[0]
-	virus_speed = maxf(virus_speed, best["speed"])
-	virus_stealth = maxf(virus_stealth, best["stealth"])
-	virus_resistance = maxf(virus_resistance, best["resistance"])
-	
-	log_event("Gen %d evolved — SPD:%.1f STL:%.1f RES:%.1f" % [
-		ga_generation, virus_speed, virus_stealth, virus_resistance
-	], "yellow")
+	# Apply best genome — but only every 5 gens to avoid runaway stat growth
+	if ga_generation % 5 == 0:
+		var best = ga_population[0]
+		virus_speed      = maxf(virus_speed,      best["speed"])
+		virus_stealth    = maxf(virus_stealth,    best["stealth"])
+		virus_resistance = maxf(virus_resistance, best["resistance"])
+		log_event("Gen %d — virus mutated! SPD:%.1f STL:%.1f RES:%.1f" % [
+			ga_generation, virus_speed, virus_stealth, virus_resistance
+		], "yellow")
 
 func _ga_pick_parent() -> Dictionary:
 	var best = ga_population[randi() % ga_population.size()]
