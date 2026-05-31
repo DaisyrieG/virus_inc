@@ -272,7 +272,7 @@ func _on_turn_tick():
 		stealth_mod *= 0.7
 	if upgrades["fileless_malware"]["bought"]:
 		stealth_mod *= 0.5
-	detection_level = clampf(detection_level + 0.008 * stealth_mod, 0.0, 1.0)
+	detection_level = clampf(detection_level + 0.004 * stealth_mod, 0.0, 1.0)
 	
 	# Defense AI gets MORE AGGRESSIVE as detection rises
 	# Below 20% — no defense (player has a head start to build up)
@@ -282,15 +282,14 @@ func _on_turn_tick():
 	
 	if detection_level >= 0.75:
 		log_event("CRITICAL: Defense in MAXIMUM ALERT!", "red")
-		_bayesian_defense()
-		_bayesian_defense()
-		_bayesian_defense()
+		if turn_count % 2 == 0:
+			_bayesian_defense()
 	elif detection_level >= 0.50:
 		log_event("WARNING: Defense increasing patrols!", "orange")
-		_bayesian_defense()
-		_bayesian_defense()
+		if turn_count % 3 == 0:
+			_bayesian_defense()
 	elif detection_level >= 0.20:
-		if turn_count % 2 == 0:
+		if turn_count % 5 == 0:
 			_bayesian_defense()
 	# Below 20% = free reign, no defense yet
 	
@@ -405,9 +404,9 @@ func _dijkstra_spread():
 # - Spreading FAST enough to outrun the defense
 # ═════════════════════════════════════════════════════════════════
 
-const PATCH_THRESHOLD: float = 0.65
-const P_SIGNAL_INFECTED: float = 0.85
-const P_SIGNAL_NOT_INFECTED: float = 0.15
+const PATCH_THRESHOLD: float = 0.85
+const P_SIGNAL_INFECTED: float = 0.70
+const P_SIGNAL_NOT_INFECTED: float = 0.30
 
 func _bayesian_defense():
 	var best_target = ""
