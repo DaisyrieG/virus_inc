@@ -421,14 +421,14 @@ func _bayesian_defense():
 			continue
 		
 		# ── OBSERVE: infected countries emit suspicious signals ───
-		var signal = _observe_signal(country)
+		var obs_signal = _observe_signal(country)
 		
 		# ── BAYES UPDATE: P(Infected | Signal) using prior from LAST TURN ─
 		# This is the KEY: prior = what we thought last turn
 		# posterior = what we think now after seeing the new signal
 		var prior = country_detection.get(country, 0.05)
-		var p_s_i   = P_SIGNAL_INFECTED * signal
-		var p_s_ni  = P_SIGNAL_NOT_INFECTED * signal
+		var p_s_i   = P_SIGNAL_INFECTED * obs_signal
+		var p_s_ni  = P_SIGNAL_NOT_INFECTED * obs_signal
 		var numerator = p_s_i * prior
 		var evidence  = numerator + p_s_ni * (1.0 - prior)
 		var posterior = numerator / evidence if evidence > 0.001 else prior
