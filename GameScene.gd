@@ -55,6 +55,9 @@ var virus_speed: float = 1.0
 var virus_stealth: float = 1.0
 var virus_resistance: float = 1.0
 
+# ── Country visual overlays (red = infected, grey = patched) ─────
+var infection_sprites: Dictionary = {}  # country_name -> Sprite2D
+
 # ── Genetic Algorithm ─────────────────────────────────────────────
 var ga_population: Array = []
 const GA_POP_SIZE: int = 10
@@ -226,6 +229,7 @@ func _start_infection(country: String):
 	resources = 10
 	log_event("%s deployed in %s!" % [Global.virus_name, country], "red")
 	show_notification("VIRUS DEPLOYED: " + country, Color(0.9, 0.15, 0.15))
+	_update_map_visuals()
 	_update_hud()
 
 
@@ -380,6 +384,7 @@ func _dijkstra_spread():
 		log_event("%s spread: %s → %s" % [Global.virus_name, spread_from, country], "red")
 		show_notification("INFECTED: " + country, Color(0.9, 0.15, 0.15))
 		resources += 3
+		_update_map_visuals()
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -484,6 +489,7 @@ func _bayesian_defense():
 		detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
 		
 		_clear_dots_in_country(best_target)
+		_update_map_visuals()
 		
 		log_event("SECURED: %s — Bayesian AI patched it! (P=%.0f%%)" % [
 			best_target, best_posterior * 100], "green")
@@ -510,6 +516,40 @@ func _observe_signal(country: String) -> float:
 
 func _clear_dots_in_country(_country: String):
 	dot_renderer.clear_dots_in_country(_country)
+
+
+# ═════════════════════════════════════════════════════════════════
+#              MAP VISUALS — countries turn RED when infected
+# ═════════════════════════════════════════════════════════════════
+
+func _update_map_visuals():
+	# Ensure every country has a sprite layer
+	for country in world_graph.keys():
+		if not infection_sprites.has(country):
+			# Create a persistent overlay sprite for this country
+			var spr = Sprite2D.new()
+			spr.centered = false
+			spr.position = Vector2.ZERO
+			if country_hover_images.has(country):
+				var tex = load(country_hover_images[country])
+				if tex:
+					spr.texture = tex
+			spr.visible = false
+			map_sprite.add_child(spr)
+			infection_sprites[country] = spr
+		
+		var spr = infection_sprites[country]
+		if country in infected_countries:
+			# RED tint — infected!
+			spr.modulate = Color(1.0, 0.1, 0.1, 0.85)
+			spr.visible = true
+		elif country in patched_countries:
+			# GREY/BLUE tint — patched by Bayesian AI
+			spr.modulate = Color(0.3, 0.5, 1.0, 0.7)
+			spr.visible = true
+		else:
+			# Normal — hide the overlay
+			spr.visible = false
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -678,26 +718,63 @@ func _refresh_terminal_buttons():
 # ═════════════════════════════════════════════════════════════════
 
 func _check_win_lose():
-	if infected_countries.size() == 0 and turn_count > 1 and patched_countries.size() > 0:
-		var hidden = patched_countries.pop_back()
-		infected_countries.append(hidden)
-		log_event("VIRUS HIDDEN! Survived in %s!" % hidden, "purple")
-		defense_log_event("CRITICAL ERROR: VIRUS NOT FULLY PURGED", "red")
-		
+	# Count infected rate
 	var rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
 	
 	if rate >= WIN_THRESHOLD:
 		_end_game(true)
-	elif detection_level >= LOSE_THRESHOLD:
+		return
+	
+	# If all countries patched and 0 infected — player loses (virus contained)
+	if infected_countries.size() == 0 and patched_countries.size() >= TOTAL_COUNTRIES:
+		_end_game(false)
+		return
+	
+	if detection_level >= LOSE_THRESHOLD:
 		_end_game(false)
 
 func _end_game(won: bool):
 	game_over = true
+	
+	# Pause the turn timer so the map stops updating
+	get_tree().paused = false  # Don't actually pause — just stop logic via game_over flag
+	
+	var result_img = "res://Assets/SCREEN_Win.png" if won else "res://Assets/SCREEN_Lose.png"
+	
 	if end_screen:
-		var end_bg = end_screen.get_node("EndBG")
+		# Load the correct result image
+		var end_bg = end_screen.get_node_or_null("EndBG")
 		if end_bg:
-			end_bg.texture = load("res://Assets/SCREEN_Win.png") if won else load("res://Assets/SCREEN_Lose.png")
+			end_bg.texture = load(result_img)
+			# Make sure it fills the whole screen
+			end_bg.anchor_left   = 0.0
+			end_bg.anchor_top    = 0.0
+			end_bg.anchor_right  = 1.0
+			end_bg.anchor_bottom = 1.0
+			end_bg.offset_left   = 0
+			end_bg.offset_top    = 0
+			end_bg.offset_right  = 0
+			end_bg.offset_bottom = 0
+			end_bg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			end_bg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		end_screen.show()
+	else:
+		# Fallback: create a simple overlay
+		var overlay = TextureRect.new()
+		overlay.texture = load(result_img)
+		overlay.anchor_left   = 0.0
+		overlay.anchor_top    = 0.0
+		overlay.anchor_right  = 1.0
+		overlay.anchor_bottom = 1.0
+		overlay.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		overlay.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		$CanvasLayer.add_child(overlay)
+	
+	# Log result
+	if won:
+		log_event("═══ %s CONQUERED THE NETWORK! ═══" % Global.virus_name, "red")
+	else:
+		log_event("═══ CYBERSECURITY AI CONTAINED THE THREAT ═══", "green")
 
 
 # ═════════════════════════════════════════════════════════════════
