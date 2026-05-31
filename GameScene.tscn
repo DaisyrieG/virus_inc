@@ -10,7 +10,6 @@
 [ext_resource type="Texture2D" uid="uid://bb5jv8dxkslct" path="res://Assets/HUD_DetectionFill.png" id="hud_detection_fill"]
 [ext_resource type="Texture2D" uid="uid://b68wmbml4n3fh" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
 [ext_resource type="Texture2D" uid="uid://docx3op0eglqc" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
-[ext_resource type="Texture2D" uid="uid://cjnhs0cij0qba" path="res://Assets/COMPS WITH THE IMPPROVING .png" id="tex_comps_overlay"]
 [ext_resource type="Texture2D" uid="uid://cvoumtff66nq2" path="res://Assets/COMPUTER.png" id="tex_computer"]
 [ext_resource type="Texture2D" path="res://Assets/IMPROVING.png" id="tex_improving"]
 
