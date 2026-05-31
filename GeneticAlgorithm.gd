@@ -36,12 +36,12 @@ func _tournament_select(infected_count: int, detection_level: float, patched_cou
 	return best
 
 func _crossover(parent_a: Dictionary, parent_b: Dictionary) -> Dictionary:
-	var point = randi_range(1, 2)
-	return {
-		"speed": parent_a["speed"] if point >= 1 else parent_b["speed"],
-		"stealth": parent_a["stealth"] if point >= 2 else parent_b["stealth"],
-		"resistance": parent_a["resistance"] if point < 2 else parent_b["resistance"]
-	}
+	var point = randi_range(1, 2)  # split after trait 1 or trait 2
+	var keys = ["speed", "stealth", "resistance"]
+	var child = {}
+	for i in range(keys.size()):
+		child[keys[i]] = parent_a[keys[i]] if i < point else parent_b[keys[i]]
+	return child
 
 func _mutate(genome: Dictionary) -> Dictionary:
 	var result = genome.duplicate()
@@ -56,8 +56,15 @@ func _mutate(genome: Dictionary) -> Dictionary:
 func evolve(infected_count: int, detection_level: float, patched_count: int) -> Dictionary:
 	generation += 1
 	
-	# Sort by fitness (best first)
-	population.sort_custom(func(a, b): return _fitness(a, infected_count, detection_level, patched_count) > _fitness(b, infected_count, detection_level, patched_count))
+	var scored = []
+	for genome in population:
+		scored.append({"genome": genome, "fit": _fitness(genome, infected_count, detection_level, patched_count)})
+		
+	scored.sort_custom(func(a, b): return a["fit"] > b["fit"])
+	
+	# Extract sorted population
+	for i in range(population.size()):
+		population[i] = scored[i]["genome"]
 	
 	# Elite: top 2 survive unchanged
 	var next_gen: Array = [

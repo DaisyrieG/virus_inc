@@ -579,19 +579,41 @@ func _ga_fitness(g: Dictionary) -> float:
 
 func _ga_evolve():
 	ga_generation += 1
-	ga_population.sort_custom(func(a, b): return _ga_fitness(a) > _ga_fitness(b))
+	
+	# Pre-compute fitness to optimize sorting
+	var scored = []
+	for g in ga_population:
+		scored.append({"genome": g, "fit": _ga_fitness(g)})
+	scored.sort_custom(func(a, b): return a["fit"] > b["fit"])
+	
+	for i in range(ga_population.size()):
+		ga_population[i] = scored[i]["genome"]
 	
 	var next: Array = [ga_population[0].duplicate(), ga_population[1].duplicate()]
+	
+	# Player agency: Buying upgrades increases mutation rate for faster evolution!
+	var player_mutation_mod = 0.0
+	for key in upgrades:
+		if upgrades[key]["bought"]:
+			player_mutation_mod += 0.05
+	var effective_mutation = clampf(GA_MUTATION_RATE + player_mutation_mod, 0.1, 0.6)
 	
 	while next.size() < GA_POP_SIZE:
 		var pa = _ga_pick_parent()
 		var pb = _ga_pick_parent()
-		var child = {"speed": pa["speed"], "stealth": pb["stealth"], "resistance": pa["resistance"]}
-		if randf() < GA_MUTATION_RATE:
+		
+		# Proper single-point crossover
+		var point = randi_range(1, 2)
+		var keys = ["speed", "stealth", "resistance"]
+		var child = {}
+		for i in range(keys.size()):
+			child[keys[i]] = pa[keys[i]] if i < point else pb[keys[i]]
+			
+		if randf() < effective_mutation:
 			child["speed"] = clampf(child["speed"] + randf_range(-0.05, 0.12), 1.0, 10.0)
-		if randf() < GA_MUTATION_RATE:
+		if randf() < effective_mutation:
 			child["stealth"] = clampf(child["stealth"] + randf_range(-0.05, 0.12), 1.0, 10.0)
-		if randf() < GA_MUTATION_RATE:
+		if randf() < effective_mutation:
 			child["resistance"] = clampf(child["resistance"] + randf_range(-0.05, 0.12), 1.0, 10.0)
 		next.append(child)
 	
