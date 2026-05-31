@@ -35,14 +35,17 @@ func _draw():
 	
 	for country in country_dots:
 		for pos in country_dots[country]:
-			# Draw a subtle dark outline for readability
-			draw_string(_font, pos + Vector2(1, 1), v_name,
-				HORIZONTAL_ALIGNMENT_CENTER, -1, 14,
-				Color(0.1, 0.0, 0.0, 0.6))
-			# Draw the actual name in bright red
+			# Draw a full black outline for maximum readability
+			var outline = Color.BLACK
+			draw_string(_font, pos + Vector2(1, 1), v_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, outline)
+			draw_string(_font, pos + Vector2(-1, -1), v_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, outline)
+			draw_string(_font, pos + Vector2(-1, 1), v_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, outline)
+			draw_string(_font, pos + Vector2(1, -1), v_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 14, outline)
+			
+			# Draw the actual name in bright neon red
 			draw_string(_font, pos, v_name,
 				HORIZONTAL_ALIGNMENT_CENTER, -1, 14,
-				dot_color)
+				Color(1.0, 0.2, 0.2, 1.0))
 	
 func clear_dots_in_country(country_name: String):
 	if country_dots.has(country_name):

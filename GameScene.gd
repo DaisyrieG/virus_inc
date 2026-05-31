@@ -240,8 +240,11 @@ func _start_infection(country: String):
 func _on_dot_tick():
 	if infected_countries.size() == 0 or game_over:
 		return
-	var random_country = infected_countries[randi() % infected_countries.size()]
-	spawn_dot_in_country(random_country)
+		
+	# Spawn multiple dots per tick so the virus name fills the country much faster visually
+	for i in range(4):
+		var random_country = infected_countries[randi() % infected_countries.size()]
+		spawn_dot_in_country(random_country)
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -405,10 +408,10 @@ func _dijkstra_spread():
 
 # Bayesian Defense constants
 # The AI needs THIS much certainty before it dares to patch
-const PATCH_THRESHOLD: float = 0.75
+const PATCH_THRESHOLD: float = 0.85
 # How strongly an infected country broadcasts its signal
-const P_SIGNAL_INFECTED: float = 0.82
-const P_SIGNAL_NOT_INFECTED: float = 0.18
+const P_SIGNAL_INFECTED: float = 0.70
+const P_SIGNAL_NOT_INFECTED: float = 0.25
 # How fast the prior decays for clean countries (keeps suspicion from lingering)
 const BAYES_DECAY: float = 0.08
 

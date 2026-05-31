@@ -9,11 +9,11 @@ extends RefCounted
 # ═══════════════════════════════════════════════════════════════════
 
 # How confident the AI needs to be before it patches a country
-const PATCH_THRESHOLD:          float = 0.75
+const PATCH_THRESHOLD:          float = 0.85
 # Probability an infected country emits a detectable signal
-const P_SIGNAL_GIVEN_INFECTED:  float = 0.82
+const P_SIGNAL_GIVEN_INFECTED:  float = 0.70
 # Probability a clean country emits a false signal (noise)
-const P_SIGNAL_GIVEN_CLEAN:     float = 0.18
+const P_SIGNAL_GIVEN_CLEAN:     float = 0.25
 # How quickly suspicion decays on clean countries per turn
 const SUSPICION_DECAY:          float = 0.06
 
