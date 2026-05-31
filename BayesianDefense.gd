@@ -4,9 +4,8 @@ extends RefCounted
 const BAYES_PATCH_THRESHOLD: float = 0.70
 const BAYES_P_SIGNAL_INFECTED: float = 0.85
 const BAYES_P_SIGNAL_NOT_INFECTED: float = 0.15
-const BAYES_MAX_PATCHES_PER_TURN: int = 1
 
-func process_turn(world_countries: Array, infected_countries: Array, patched_countries: Array, country_detection: Dictionary, virus_stealth: float, virus_resistance: float) -> Dictionary:
+func process_turn(world_countries: Array, infected_countries: Array, patched_countries: Array, country_detection: Dictionary, virus_stealth: float, virus_resistance: float, max_patches: int = 1) -> Dictionary:
 	var candidates: Array = []
 	var results: Dictionary = {
 		"patched": [],
@@ -30,7 +29,7 @@ func process_turn(world_countries: Array, infected_countries: Array, patched_cou
 			
 	candidates.sort_custom(func(a, b): return a["posterior"] > b["posterior"])
 	
-	var patches_this_turn = min(BAYES_MAX_PATCHES_PER_TURN, candidates.size())
+	var patches_this_turn = min(max_patches, candidates.size())
 	for i in range(patches_this_turn):
 		var target = candidates[i]["country"]
 		var resist_chance = clampf(virus_resistance * 0.08, 0.0, 0.8)

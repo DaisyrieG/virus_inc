@@ -1,0 +1,502 @@
+[gd_scene load_steps=12 format=3 uid="uid://dgame1234567"]
+
+[ext_resource type="Script" path="res://GameScene.gd" id="1_script"]
+[ext_resource type="Texture2D" uid="uid://dkja5rvr28lkr" path="res://Assets/ASIAMAP_REALISTIC.png" id="2_map"]
+[ext_resource type="Script" path="res://DotRenderer.gd" id="3_dot"]
+[ext_resource type="Texture2D" uid="uid://u3xwx170p74h" path="res://Assets/HUD_BarBG.png" id="hud_bar_bg"]
+[ext_resource type="Texture2D" uid="uid://cmx71i2p6hpjs" path="res://Assets/HUD_Btn_Resistance.png" id="hud_btn_resistance"]
+[ext_resource type="Texture2D" uid="uid://u8or0xivxf32" path="res://Assets/HUD_Btn_Speed.png" id="hud_btn_speed"]
+[ext_resource type="Texture2D" uid="uid://d03fn3j4246nn" path="res://Assets/HUD_Btn_Stealth.png" id="hud_btn_stealth"]
+[ext_resource type="Texture2D" uid="uid://bb5jv8dxkslct" path="res://Assets/HUD_DetectionFill.png" id="hud_detection_fill"]
+[ext_resource type="Texture2D" uid="uid://b68wmbml4n3fh" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
+[ext_resource type="Texture2D" uid="uid://docx3op0eglqc" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
+[ext_resource type="Texture2D" uid="uid://cvoumtff66nq2" path="res://Assets/COMPUTER.png" id="tex_computer"]
+
+[node name="GameScene" type="Node2D"]
+script = ExtResource("1_script")
+
+[node name="BackgroundLayer" type="CanvasLayer" parent="."]
+layer = -1
+
+[node name="Ocean" type="ColorRect" parent="BackgroundLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.101961, 0.168627, 0.298039, 1)
+
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(960, 540)
+limit_left = 0
+limit_top = 0
+limit_right = 1920
+limit_bottom = 1080
+
+[node name="MapSprite" type="Sprite2D" parent="."]
+texture = ExtResource("2_map")
+centered = false
+
+[node name="DotRenderer" type="Node2D" parent="MapSprite"]
+script = ExtResource("3_dot")
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="Panel" parent="CanvasLayer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+mouse_filter = 2
+
+[node name="HoverLabel" type="Label" parent="CanvasLayer"]
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 10.0
+offset_bottom = 50.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+
+[node name="HUD" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopPanel" type="Control" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 0
+offset_left = 20.0
+offset_top = 15.0
+offset_right = 750.0
+offset_bottom = 135.0
+
+[node name="VirusNameLabel" type="Label" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 5.0
+offset_right = 180.0
+offset_bottom = 36.0
+theme_override_colors/font_color = Color(0.862745, 0.12549, 0.12549, 1)
+theme_override_font_sizes/font_size = 22
+text = "VIRUS NAME"
+
+[node name="TurnLabel" type="Label" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 200.0
+offset_top = 7.0
+offset_right = 260.0
+offset_bottom = 30.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "Turn: 0"
+
+[node name="InfectionLabel" type="Label" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 35.0
+offset_right = 150.0
+offset_bottom = 58.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "INFECTED: 0/7"
+
+[node name="InfectionBarBG" type="TextureRect" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 55.0
+offset_right = 320.0
+offset_bottom = 75.0
+texture = ExtResource("hud_bar_bg")
+expand_mode = 1
+
+[node name="InfectionBar" type="TextureRect" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 57.0
+offset_right = 318.0
+offset_bottom = 73.0
+texture = ExtResource("hud_infection_fill")
+expand_mode = 1
+
+[node name="DetectionLabel" type="Label" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 80.0
+offset_right = 150.0
+offset_bottom = 103.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 16
+text = "DETECTION: 0%"
+
+[node name="DetectionBarBG" type="TextureRect" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 93.0
+offset_right = 320.0
+offset_bottom = 113.0
+texture = ExtResource("hud_bar_bg")
+expand_mode = 1
+
+[node name="DetectionBar" type="TextureRect" parent="CanvasLayer/HUD/TopPanel"]
+layout_mode = 0
+offset_left = 22.0
+offset_top = 95.0
+offset_right = 318.0
+offset_bottom = 111.0
+texture = ExtResource("hud_detection_fill")
+expand_mode = 1
+
+[node name="BottomPanel" type="Control" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = -140.0
+offset_right = 960.0
+offset_bottom = -20.0
+grow_vertical = 0
+
+[node name="ResourcesLabel" type="Label" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 10.0
+offset_right = 160.0
+offset_bottom = 33.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "RESOURCES: 10"
+
+[node name="BtnSpeed" type="TextureButton" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 40.0
+offset_right = 290.0
+offset_bottom = 110.0
+texture_normal = ExtResource("hud_btn_speed")
+
+[node name="BtnStealth" type="TextureButton" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 310.0
+offset_top = 40.0
+offset_right = 580.0
+offset_bottom = 110.0
+texture_normal = ExtResource("hud_btn_stealth")
+
+[node name="BtnResistance" type="TextureButton" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 610.0
+offset_top = 40.0
+offset_right = 880.0
+offset_bottom = 110.0
+texture_normal = ExtResource("hud_btn_resistance")
+
+[node name="TraitsLabel" type="Label" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = -20.0
+offset_right = 400.0
+offset_bottom = 10.0
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "SPD: 1 | STL: 1 | RES: 1"
+
+[node name="NotificationLabel" type="Label" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 200.0
+offset_right = 200.0
+offset_bottom = 234.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(1, 0.2, 0.2, 1)
+theme_override_font_sizes/font_size = 24
+horizontal_alignment = 1
+
+[node name="EventLog" type="Panel" parent="CanvasLayer/HUD"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -970.0
+offset_top = -420.0
+offset_right = -20.0
+offset_bottom = -140.0
+grow_horizontal = 0
+grow_vertical = 0
+
+[node name="BG" type="ColorRect" parent="CanvasLayer/HUD/EventLog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.039, 0.031, 0.031, 0.784)
+
+[node name="EventText" type="RichTextLabel" parent="CanvasLayer/HUD/EventLog"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/bold_italics_font_size = 13
+theme_override_font_sizes/italics_font_size = 13
+theme_override_font_sizes/mono_font_size = 13
+theme_override_font_sizes/normal_font_size = 13
+theme_override_font_sizes/bold_font_size = 13
+bbcode_enabled = true
+scroll_following = true
+
+[node name="EndScreen" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="EndBG" type="TextureRect" parent="CanvasLayer/EndScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("hud_win_screen")
+
+[node name="Title" type="Label" parent="CanvasLayer/EndScreen"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+offset_bottom = 50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 64
+text = "GAME OVER"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="CRTMonitor" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="DimBackground" type="ColorRect" parent="CanvasLayer/CRTMonitor"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="ComputerBG" type="TextureRect" parent="CanvasLayer/CRTMonitor"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.514
+anchor_top = 0.385
+anchor_right = 0.514
+anchor_bottom = 0.385
+offset_left = -726.88
+offset_top = -375.8
+offset_right = 673.12
+offset_bottom = 624.2
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("tex_computer")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ScreenOverlay" type="ColorRect" parent="CanvasLayer/CRTMonitor/ComputerBG"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -221.0
+offset_top = -298.0
+offset_right = 266.0
+offset_bottom = 49.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.02, 0, 0.05, 0.95)
+
+[node name="Label" type="Label" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_left = 2.0
+offset_top = 7.0
+offset_right = 2.0
+offset_bottom = 46.0
+grow_horizontal = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+theme_override_font_sizes/font_size = 28
+text = "VIRUS UPGRADE TERMINAL"
+horizontal_alignment = 1
+
+[node name="CloseBtn" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -40.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 40.0
+grow_horizontal = 0
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_font_sizes/font_size = 24
+text = "X"
+flat = true
+
+[node name="GridContainer" type="GridContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -221.5
+offset_top = -127.5
+offset_right = 259.5
+offset_bottom = 149.5
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/h_separation = 30
+theme_override_constants/v_separation = 20
+columns = 2
+
+[node name="VBoxTrans" type="VBoxContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxTrans"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "TRANSMISSION
+───────────"
+
+[node name="BtnEmail" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxTrans"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> EMAIL PHISHING [5]"
+flat = true
+alignment = 0
+
+[node name="BtnCloud" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxTrans"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> CLOUD EXPLOIT [15]"
+flat = true
+alignment = 0
+
+[node name="VBoxStealth" type="VBoxContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxStealth"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "STEALTH
+───────────"
+
+[node name="BtnObfuscation" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxStealth"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> CODE OBFUSCATION [8]"
+flat = true
+alignment = 0
+
+[node name="BtnFileless" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxStealth"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> FILELESS MALWARE [20]"
+flat = true
+alignment = 0
+
+[node name="VBoxResist" type="VBoxContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxResist"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "RESISTANCE
+───────────"
+
+[node name="BtnRegistry" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxResist"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> REGISTRY PERSIST [10]"
+flat = true
+alignment = 0
+
+[node name="BtnAntiAV" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxResist"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> ANTI-ANTIVIRUS [25]"
+flat = true
+alignment = 0
+
+[node name="VBoxPayload" type="VBoxContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Title" type="Label" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxPayload"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "PAYLOAD
+───────────"
+
+[node name="BtnKeylogger" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxPayload"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> KEYLOGGER [8]"
+flat = true
+alignment = 0
+
+[node name="BtnRansomware" type="Button" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxPayload"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "> RANSOMWARE [20]"
+flat = true
+alignment = 0
+
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnSpeed" to="." method="_on_btn_speed_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnStealth" to="." method="_on_btn_stealth_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnResistance" to="." method="_on_btn_resistance_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/CloseBtn" to="CanvasLayer/CRTMonitor" method="hide"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxTrans/BtnEmail" to="." method="_on_email_phishing_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxTrans/BtnCloud" to="." method="_on_cloud_exploit_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxStealth/BtnObfuscation" to="." method="_on_code_obfuscation_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxStealth/BtnFileless" to="." method="_on_fileless_malware_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxResist/BtnRegistry" to="." method="_on_registry_persist_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxResist/BtnAntiAV" to="." method="_on_anti_antivirus_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxPayload/BtnKeylogger" to="." method="_on_keylogger_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer/VBoxPayload/BtnRansomware" to="." method="_on_ransomware_pressed"]
