@@ -500,9 +500,9 @@ func _ga_init_population():
 	ga_population.clear()
 	for i in range(GA_POP_SIZE):
 		ga_population.append({
-			"speed": randf_range(1.0, 3.0),
-			"stealth": randf_range(1.0, 3.0),
-			"resistance": randf_range(1.0, 3.0)
+			"speed": 1.0,
+			"stealth": 1.0,
+			"resistance": 1.0
 		})
 
 func _ga_fitness(g: Dictionary) -> float:
@@ -524,11 +524,11 @@ func _ga_evolve():
 		var child = {"speed": pa["speed"], "stealth": pb["stealth"], "resistance": pa["resistance"]}
 		# Mutate
 		if randf() < GA_MUTATION_RATE:
-			child["speed"] = clampf(child["speed"] + randf_range(-0.5, 0.5), 1.0, 10.0)
+			child["speed"] = clampf(child["speed"] + randf_range(-0.1, 0.15), 1.0, 10.0)
 		if randf() < GA_MUTATION_RATE:
-			child["stealth"] = clampf(child["stealth"] + randf_range(-0.5, 0.5), 1.0, 10.0)
+			child["stealth"] = clampf(child["stealth"] + randf_range(-0.1, 0.15), 1.0, 10.0)
 		if randf() < GA_MUTATION_RATE:
-			child["resistance"] = clampf(child["resistance"] + randf_range(-0.5, 0.5), 1.0, 10.0)
+			child["resistance"] = clampf(child["resistance"] + randf_range(-0.1, 0.15), 1.0, 10.0)
 		next.append(child)
 	
 	ga_population = next
