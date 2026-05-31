@@ -61,6 +61,7 @@ var upgrades = {
 
 # ── Genetic Algorithm ───────────────────────────────────────────────
 var ga: GeneticAlgorithm = GeneticAlgorithm.new()
+var bayesian_ai: BayesianDefense = BayesianDefense.new()
 
 # ── Win/Lose Thresholds ──────────────────────────────────────────
 const WIN_THRESHOLD: float = 0.90     # Infect 90% of countries to win
