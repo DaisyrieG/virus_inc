@@ -11,7 +11,6 @@
 [ext_resource type="Texture2D" uid="uid://b68wmbml4n3fh" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
 [ext_resource type="Texture2D" uid="uid://docx3op0eglqc" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
 [ext_resource type="Texture2D" uid="uid://cvoumtff66nq2" path="res://Assets/COMPUTER.png" id="tex_computer"]
-[ext_resource type="Texture2D" path="res://Assets/IMPROVING.png" id="tex_improving"]
 
 [node name="GameScene" type="Node2D"]
 script = ExtResource("1_script")
@@ -334,22 +333,20 @@ texture = ExtResource("tex_computer")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ScreenOverlay" type="TextureRect" parent="CanvasLayer/CRTMonitor/ComputerBG"]
+[node name="ScreenOverlay" type="ColorRect" parent="CanvasLayer/CRTMonitor/ComputerBG"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -340.0
-offset_top = -320.0
-offset_right = 340.0
-offset_bottom = 140.0
+offset_left = -400.0
+offset_top = -280.0
+offset_right = 400.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
-texture = ExtResource("tex_improving")
-expand_mode = 1
-stretch_mode = 5
+color = Color(0.02, 0.0, 0.05, 0.95)
 
 [node name="Label" type="Label" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay"]
 layout_mode = 1
@@ -385,10 +382,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -280.0
-offset_top = -140.0
-offset_right = 280.0
-offset_bottom = 200.0
+offset_left = -350.0
+offset_top = -120.0
+offset_right = 350.0
+offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/h_separation = 30
