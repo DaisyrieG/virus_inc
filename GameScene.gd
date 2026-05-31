@@ -9,14 +9,14 @@ extends Node2D
 @onready var hover_label = $CanvasLayer/HoverLabel
 @onready var camera = $Camera2D
 
-@onready var infection_label    = $CanvasLayer/HUD/InfectionLabel    if has_node("CanvasLayer/HUD/InfectionLabel")    else null
-@onready var detection_label    = $CanvasLayer/HUD/DetectionLabel    if has_node("CanvasLayer/HUD/DetectionLabel")    else null
-@onready var resources_label    = $CanvasLayer/HUD/ResourcesLabel    if has_node("CanvasLayer/HUD/ResourcesLabel")    else null
-@onready var traits_label       = $CanvasLayer/HUD/TraitsLabel       if has_node("CanvasLayer/HUD/TraitsLabel")       else null
-@onready var turn_label         = $CanvasLayer/HUD/TurnLabel         if has_node("CanvasLayer/HUD/TurnLabel")         else null
-@onready var virus_name_label   = $CanvasLayer/HUD/VirusNameLabel    if has_node("CanvasLayer/HUD/VirusNameLabel")    else null
-@onready var infection_bar      = $CanvasLayer/HUD/InfectionBar      if has_node("CanvasLayer/HUD/InfectionBar")      else null
-@onready var detection_bar      = $CanvasLayer/HUD/DetectionBar      if has_node("CanvasLayer/HUD/DetectionBar")      else null
+@onready var infection_label    = $CanvasLayer/HUD/TopPanel/InfectionLabel    if has_node("CanvasLayer/HUD/TopPanel/InfectionLabel")    else null
+@onready var detection_label    = $CanvasLayer/HUD/TopPanel/DetectionLabel    if has_node("CanvasLayer/HUD/TopPanel/DetectionLabel")    else null
+@onready var resources_label    = $CanvasLayer/HUD/BottomPanel/ResourcesLabel if has_node("CanvasLayer/HUD/BottomPanel/ResourcesLabel") else null
+@onready var traits_label       = $CanvasLayer/HUD/BottomPanel/TraitsLabel    if has_node("CanvasLayer/HUD/BottomPanel/TraitsLabel")    else null
+@onready var turn_label         = $CanvasLayer/HUD/TopPanel/TurnLabel         if has_node("CanvasLayer/HUD/TopPanel/TurnLabel")         else null
+@onready var virus_name_label   = $CanvasLayer/HUD/TopPanel/VirusNameLabel    if has_node("CanvasLayer/HUD/TopPanel/VirusNameLabel")    else null
+@onready var infection_bar      = $CanvasLayer/HUD/TopPanel/InfectionBar      if has_node("CanvasLayer/HUD/TopPanel/InfectionBar")      else null
+@onready var detection_bar      = $CanvasLayer/HUD/TopPanel/DetectionBar      if has_node("CanvasLayer/HUD/TopPanel/DetectionBar")      else null
 @onready var notification_label = $CanvasLayer/HUD/NotificationLabel if has_node("CanvasLayer/HUD/NotificationLabel") else null
 @onready var event_text         = $CanvasLayer/HUD/EventLog/EventText if has_node("CanvasLayer/HUD/EventLog/EventText") else null
 @onready var end_screen         = $CanvasLayer/EndScreen             if has_node("CanvasLayer/EndScreen")             else null
