@@ -103,7 +103,8 @@ var country_hover_textures: Dictionary = {}
 # ═════════════════════════════════════════════════════════════════
 
 func _ready():
-	color_id_image = Image.load_from_file("res://Assets/ColorIDMap.png")
+	var color_id_tex = load("res://Assets/ColorIDMap.png")
+	color_id_image = color_id_tex.get_image()
 
 	var file = FileAccess.open("res://Assets/country_data.json", FileAccess.READ)
 	if file:
