@@ -130,6 +130,7 @@ func _ready():
 
 	_ga_init_population()
 	_setup_dynamic_ui()
+	_create_upgrade_shop_ui()
 
 	if end_screen:
 		end_screen.hide()
@@ -286,8 +287,8 @@ func _dijkstra_spread():
 		return
 
 	# Spread chance scales with Speed
-	# Speed 1 → 35%, Speed 5 → 55%, Speed 10 → 80%
-	var spread_chance = 0.35 + (virus_speed - 1.0) * 0.05
+	# Base 28% chance allows for consistent but not overwhelming early spread
+	var spread_chance = 0.28 + (virus_speed - 1.0) * 0.05
 
 	if randf() > spread_chance:
 		defense_log_event("Spread attempt blocked...", "gray")
@@ -343,9 +344,9 @@ func _dijkstra_spread():
 #         BAYESIAN DEFENSE — CORRECTED VERSION
 # ═════════════════════════════════════════════════════════════════
 
-const PATCH_THRESHOLD:         float = 0.80
-const P_SIGNAL_INFECTED:       float = 0.65
-const P_SIGNAL_NOT_INFECTED:   float = 0.08
+const PATCH_THRESHOLD:         float = 0.82
+const P_SIGNAL_INFECTED:       float = 0.78
+const P_SIGNAL_NOT_INFECTED:   float = 0.18
 const BAYES_DECAY:             float = 0.10
 
 func _bayesian_defense():
@@ -927,6 +928,61 @@ func _update_defense_panel():
 		status_label.text   = "DORMANT  [%d%%]" % det_pct
 		status_label.add_theme_color_override("font_color", Color.WHITE)
 	patch_count_label.text = str(total_patches)
+
+func _create_upgrade_shop_ui():
+	var panel = PanelContainer.new()
+	panel.anchor_left = 0.0
+	panel.anchor_top = 0.0
+	panel.anchor_right = 0.25
+	panel.anchor_bottom = 1.0
+	panel.offset_left = 10
+	panel.offset_right = -10
+	panel.offset_top = 10
+	panel.offset_bottom = -10
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.15, 0.1, 0.95)
+	style.border_color = Color(0.0, 0.8, 0.4)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	panel.add_theme_stylebox_override("panel", style)
+	
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 15)
+	margin.add_theme_constant_override("margin_right", 15)
+	margin.add_theme_constant_override("margin_top", 15)
+	margin.add_theme_constant_override("margin_bottom", 15)
+	panel.add_child(margin)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+	
+	var title = Label.new()
+	title.text = "VIRUS UPGRADES"
+	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_color_override("font_color", Color(0.0, 1.0, 0.5))
+	vbox.add_child(title)
+	
+	var res_label = Label.new()
+	res_label.name = "ShopResLabel"
+	res_label.text = "RESOURCES: %d" % resources
+	res_label.add_theme_font_size_override("font_size", 14)
+	res_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.0))
+	vbox.add_child(res_label)
+	
+	for key in upgrades:
+		var btn = Button.new()
+		btn.name = "Btn_" + key
+		btn.text = "%s [%d]" % [key.replace("_", " ").to_upper(), upgrades[key]["cost"]]
+		btn.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+		btn.pressed.connect(self.buy_upgrade.bind(key))
+		vbox.add_child(btn)
+	
+	var canvas = $CanvasLayer if has_node("CanvasLayer") else self
+	canvas.add_child(panel)
 
 func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:
