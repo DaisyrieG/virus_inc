@@ -41,10 +41,10 @@ var detection_level: float = 0.0           # 0 to 1 — THE ENEMY BAR
 var turn_count: int = 0
 
 # ── Dynamic Defense UI ────────────────────────────────────────────
-@onready var alert_badge: TextureRect = null
-@onready var status_label: Label = null
-@onready var patch_count_label: Label = null
-@onready var defense_log: RichTextLabel = null
+var alert_badge: TextureRect = null
+var status_label: Label = null
+var patch_count_label: Label = null
+var defense_log: RichTextLabel = null
 var total_patches: int = 0
 var milestones = {"20": false, "50": false, "75": false}
 var game_over: bool = false
@@ -617,7 +617,6 @@ func _ga_pick_parent() -> Dictionary:
 # ═════════════════════════════════════════════════════════════════
 
 func buy_upgrade(upgrade_id: String):
-	print("[BUY] attempting: ", upgrade_id, " | resources: ", resources)
 	if game_over or not upgrades.has(upgrade_id):
 		return
 	
@@ -661,7 +660,6 @@ func buy_upgrade(upgrade_id: String):
 			log_event("RANSOMWARE unlocked! +5 flat res/turn!", "purple")
 	
 	show_notification("✓ UNLOCKED: " + upgrade_id.replace("_", " ").to_upper(), Color(0.3, 0.9, 0.9))
-	print("[BUY] success! ", upgrade_id, " bought. Resources left: ", resources)
 	_update_hud()
 	_refresh_terminal_buttons()
 	# Close terminal after buying so player sees the effect on the map
@@ -775,6 +773,33 @@ func _end_game(won: bool):
 		log_event("═══ %s CONQUERED THE NETWORK! ═══" % Global.virus_name, "red")
 	else:
 		log_event("═══ CYBERSECURITY AI CONTAINED THE THREAT ═══", "green")
+	
+	# Add Restart and Main Menu buttons dynamically on the CanvasLayer
+	var btn_container = HBoxContainer.new()
+	btn_container.anchor_left   = 0.5
+	btn_container.anchor_top    = 0.82
+	btn_container.anchor_right  = 0.5
+	btn_container.anchor_bottom = 0.82
+	btn_container.offset_left   = -180
+	btn_container.offset_right  =  180
+	btn_container.offset_top    = -25
+	btn_container.offset_bottom =  25
+	btn_container.add_theme_constant_override("separation", 20)
+	$CanvasLayer.add_child(btn_container)
+	
+	var btn_restart = Button.new()
+	btn_restart.text = "↺  PLAY AGAIN"
+	btn_restart.custom_minimum_size = Vector2(160, 44)
+	btn_restart.add_theme_color_override("font_color", Color(0, 1, 0.4))
+	btn_restart.pressed.connect(func(): get_tree().reload_current_scene())
+	btn_container.add_child(btn_restart)
+	
+	var btn_menu = Button.new()
+	btn_menu.text = "⌂  MAIN MENU"
+	btn_menu.custom_minimum_size = Vector2(160, 44)
+	btn_menu.add_theme_color_override("font_color", Color(0.8, 0.8, 1.0))
+	btn_menu.pressed.connect(func(): get_tree().change_scene_to_file("res://MainMenu.tscn"))
+	btn_container.add_child(btn_menu)
 
 
 # ═════════════════════════════════════════════════════════════════
@@ -842,9 +867,10 @@ func _check_hover(screen_pos: Vector2):
 			hovered_country = country
 			
 			# Show status next to country name
+			var prob = country_detection.get(country, 0.0)
 			var status = " [SUSCEPTIBLE]"
 			if country in infected_countries:
-				status = " [INFECTED]"
+				status = " [INFECTED] P(det)=%.0f%%" % (prob * 100)
 			elif country in patched_countries:
 				status = " [PATCHED]"
 				
@@ -1031,6 +1057,18 @@ func _update_defense_panel():
 		status_label.add_theme_color_override("font_color", Color.WHITE)
 		
 	patch_count_label.text = str(total_patches)
+	
+	# Update panel title tooltip with detection %
+	if status_label:
+		var det_pct = int(detection_level * 100)
+		if detection_level >= 0.75:
+			status_label.text = "MAX RESPONSE  [%d%%]" % det_pct
+		elif detection_level >= 0.50:
+			status_label.text = "ACTIVE HUNTING  [%d%%]" % det_pct
+		elif detection_level >= 0.20:
+			status_label.text = "SCANNING...  [%d%%]" % det_pct
+		else:
+			status_label.text = "DORMANT  [%d%%]" % det_pct
 
 func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:
