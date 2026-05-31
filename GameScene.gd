@@ -880,8 +880,7 @@ func _check_hover(screen_pos: Vector2):
 			elif country in patched_countries:
 				status = " [PATCHED]"
 				
-			var prob = country_detection.get(country, 0.0) * 100
-			hover_label.text = country + status + "\nP(Infected) = %.0f%%" % prob
+			hover_label.text = country + status + "\nP(Infected) = %.0f%%" % (prob * 100)
 			
 			if country_hover_textures.has(country):
 				hover_sprite.texture = country_hover_textures[country]
