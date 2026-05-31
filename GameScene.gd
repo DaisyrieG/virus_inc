@@ -254,7 +254,11 @@ func _on_turn_tick():
 	
 	# Detection rises every turn (stealth slows it down)
 	var stealth_mod = 1.0 - clampf(virus_stealth * 0.07, 0.0, 0.7)
-	detection_level = clampf(detection_level + 0.015 * stealth_mod, 0.0, 1.0)
+	if upgrades["code_obfuscation"]["bought"]:
+		stealth_mod *= 0.7
+	if upgrades["fileless_malware"]["bought"]:
+		stealth_mod *= 0.5
+	detection_level = clampf(detection_level + 0.008 * stealth_mod, 0.0, 1.0)
 	
 	# Defense AI gets MORE AGGRESSIVE as detection rises
 	# Below 20% — no defense (player has a head start to build up)
@@ -272,7 +276,8 @@ func _on_turn_tick():
 		_bayesian_defense()
 		_bayesian_defense()
 	elif detection_level >= 0.20:
-		_bayesian_defense()
+		if turn_count % 2 == 0:
+			_bayesian_defense()
 	# Below 20% = free reign, no defense yet
 	
 	# Detection milestone warnings
@@ -467,9 +472,9 @@ func _ga_init_population():
 	ga_population.clear()
 	for i in range(GA_POP_SIZE):
 		ga_population.append({
-			"speed": randf_range(1.0, 5.0),
-			"stealth": randf_range(1.0, 5.0),
-			"resistance": randf_range(1.0, 5.0)
+			"speed": randf_range(1.0, 3.0),
+			"stealth": randf_range(1.0, 3.0),
+			"resistance": randf_range(1.0, 3.0)
 		})
 
 func _ga_fitness(g: Dictionary) -> float:
@@ -491,11 +496,11 @@ func _ga_evolve():
 		var child = {"speed": pa["speed"], "stealth": pb["stealth"], "resistance": pa["resistance"]}
 		# Mutate
 		if randf() < GA_MUTATION_RATE:
-			child["speed"] = clampf(child["speed"] + randf_range(-1.5, 1.5), 1.0, 10.0)
+			child["speed"] = clampf(child["speed"] + randf_range(-0.5, 0.5), 1.0, 10.0)
 		if randf() < GA_MUTATION_RATE:
-			child["stealth"] = clampf(child["stealth"] + randf_range(-1.5, 1.5), 1.0, 10.0)
+			child["stealth"] = clampf(child["stealth"] + randf_range(-0.5, 0.5), 1.0, 10.0)
 		if randf() < GA_MUTATION_RATE:
-			child["resistance"] = clampf(child["resistance"] + randf_range(-1.5, 1.5), 1.0, 10.0)
+			child["resistance"] = clampf(child["resistance"] + randf_range(-0.5, 0.5), 1.0, 10.0)
 		next.append(child)
 	
 	ga_population = next
@@ -505,6 +510,10 @@ func _ga_evolve():
 	virus_speed = maxf(virus_speed, best["speed"])
 	virus_stealth = maxf(virus_stealth, best["stealth"])
 	virus_resistance = maxf(virus_resistance, best["resistance"])
+	
+	log_event("Gen %d evolved — SPD:%.1f STL:%.1f RES:%.1f" % [
+		ga_generation, virus_speed, virus_stealth, virus_resistance
+	], "yellow")
 
 func _ga_pick_parent() -> Dictionary:
 	var best = ga_population[randi() % ga_population.size()]
@@ -659,13 +668,14 @@ func _check_hover(screen_pos: Vector2):
 			hovered_country = country
 			
 			# Show status next to country name
-			var status = ""
+			var status = " [SUSCEPTIBLE]"
 			if country in infected_countries:
 				status = " [INFECTED]"
 			elif country in patched_countries:
 				status = " [PATCHED]"
-			
-			hover_label.text = country + status
+				
+			var prob = country_detection.get(country, 0.0) * 100
+			hover_label.text = country + status + "\nP(Infected) = %.0f%%" % prob
 			
 			if country_hover_textures.has(country):
 				hover_sprite.texture = country_hover_textures[country]
@@ -699,5 +709,5 @@ func spawn_dot_in_country(country_name: String):
 		var ry = randi_range(bbox[1], bbox[3])
 		var pcolor = color_id_image.get_pixel(rx, ry).to_html(false)
 		if pcolor == target_color:
-			dot_renderer.add_dot(Vector2(rx, ry))
+			dot_renderer.add_dot(Vector2(rx, ry), country_name)
 			break
