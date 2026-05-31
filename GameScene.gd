@@ -787,7 +787,6 @@ func _setup_dynamic_ui():
 	# 1. Defense Panel
 	var dp = TextureRect.new()
 	dp.texture = load("res://Assets/HUD_DefensePanel.png")
-	# Force anchor right
 	dp.anchor_left = 1.0
 	dp.anchor_right = 1.0
 	dp.anchor_top = 0.0
@@ -799,63 +798,68 @@ func _setup_dynamic_ui():
 	dp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	dp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	
-	# --- MASKS TO HIDE BAKED PLACEHOLDER TEXT IN THE IMAGE ---
-	var mask_color = Color(0.01, 0.08, 0.04, 1.0) # Matches the dark green background
-	
-	var m1 = ColorRect.new()
-	m1.color = mask_color
-	m1.offset_left = 85
-	m1.offset_top = 18
-	m1.offset_right = 300
-	m1.offset_bottom = 40
-	dp.add_child(m1)
-	
-	var m2 = ColorRect.new()
-	m2.color = mask_color
-	m2.offset_left = 220
-	m2.offset_top = 62
-	m2.offset_right = 300
-	m2.offset_bottom = 85
-	dp.add_child(m2)
-	
-	var m4 = ColorRect.new()
-	m4.color = mask_color
-	m4.offset_left = 10
-	m4.offset_top = 135
-	m4.offset_right = 310
-	m4.offset_bottom = 280
-	dp.add_child(m4)
+	# --- FOOLPROOF MASK ---
+	# Covers the entire inside of the panel so we don't have to guess where the baked text is!
+	var main_mask = ColorRect.new()
+	main_mask.color = Color(0.01, 0.08, 0.04, 1.0) # Matches the dark green background
+	main_mask.offset_left = 10
+	main_mask.offset_top = 45 # Leaves the "BAYESIAN DEFENSE AI" title visible!
+	main_mask.offset_right = 310
+	main_mask.offset_bottom = 285
+	dp.add_child(main_mask)
 	
 	# --- DYNAMIC CONTENT ---
 	alert_badge = TextureRect.new()
-	alert_badge.offset_left = 15
-	alert_badge.offset_top = 18
-	alert_badge.offset_right = 55
-	alert_badge.offset_bottom = 58
+	alert_badge.offset_left = 20
+	alert_badge.offset_top = 60
+	alert_badge.offset_right = 80
+	alert_badge.offset_bottom = 120
 	alert_badge.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	alert_badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	dp.add_child(alert_badge)
 	
+	var lbl_status_title = Label.new()
+	lbl_status_title.text = "STATUS:"
+	lbl_status_title.offset_left = 100
+	lbl_status_title.offset_top = 65
+	lbl_status_title.add_theme_color_override("font_color", Color(0, 0.8, 0.4))
+	dp.add_child(lbl_status_title)
+	
 	status_label = Label.new()
 	status_label.text = "DORMANT"
-	status_label.offset_left = 85
-	status_label.offset_top = 18
+	status_label.offset_left = 165
+	status_label.offset_top = 65
 	status_label.add_theme_color_override("font_color", Color.WHITE)
 	dp.add_child(status_label)
 	
+	var lbl_patch_title = Label.new()
+	lbl_patch_title.text = "PATCHES DEPLOYED:"
+	lbl_patch_title.offset_left = 100
+	lbl_patch_title.offset_top = 95
+	lbl_patch_title.add_theme_color_override("font_color", Color(0, 0.8, 0.4))
+	dp.add_child(lbl_patch_title)
+	
 	patch_count_label = Label.new()
 	patch_count_label.text = "0"
-	patch_count_label.offset_left = 230
-	patch_count_label.offset_top = 62
+	patch_count_label.offset_left = 265
+	patch_count_label.offset_top = 95
 	patch_count_label.add_theme_color_override("font_color", Color(0, 1, 0)) # bright green
 	dp.add_child(patch_count_label)
+	
+	var log_separator = ColorRect.new()
+	log_separator.color = Color(0, 0.5, 0.2, 0.5)
+	log_separator.offset_left = 20
+	log_separator.offset_top = 130
+	log_separator.offset_right = 300
+	log_separator.offset_bottom = 132
+	dp.add_child(log_separator)
 	
 	defense_log = RichTextLabel.new()
 	defense_log.bbcode_enabled = true
 	defense_log.scroll_following = true
-	defense_log.offset_left = 15
-	defense_log.offset_top = 135
-	defense_log.offset_right = 305
+	defense_log.offset_left = 20
+	defense_log.offset_top = 140
+	defense_log.offset_right = 300
 	defense_log.offset_bottom = 280
 	dp.add_child(defense_log)
 	
