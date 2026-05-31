@@ -1,31 +1,27 @@
 extends Node2D
 
 # ═══════════════════════════════════════════════════════════════════
-# GAME SCENE — MAIN GAME CONTROLLER
-# ═══════════════════════════════════════════════════════════════════
-# Orchestrates: Dijkstra spread, Genetic Algorithm evolution,
-# Bayesian Defense AI, resource economy, and win/lose conditions.
+# VIRUS INC — GAME SCENE (THE FIGHT)
 # ═══════════════════════════════════════════════════════════════════
 
-# ── Existing Scene References ─────────────────────────────────────
+# ── Scene References ──────────────────────────────────────────────
 @onready var map_sprite = $MapSprite
 @onready var dot_renderer = $MapSprite/DotRenderer
 @onready var hover_label = $CanvasLayer/HoverLabel
 @onready var camera = $Camera2D
 
-# ── HUD References (add these nodes to your CanvasLayer) ──────────
-# You'll need to create these UI nodes in the editor:
-@onready var infection_label = $CanvasLayer/HUD/TopPanel/InfectionLabel
-@onready var detection_label = $CanvasLayer/HUD/TopPanel/DetectionLabel
-@onready var resources_label = $CanvasLayer/HUD/BottomPanel/ResourcesLabel
-@onready var infection_bar = $CanvasLayer/HUD/TopPanel/InfectionBar
-@onready var detection_bar = $CanvasLayer/HUD/TopPanel/DetectionBar
-@onready var virus_name_label = $CanvasLayer/HUD/TopPanel/VirusNameLabel
-@onready var turn_label = $CanvasLayer/HUD/TopPanel/TurnLabel
-@onready var notification_label = $CanvasLayer/HUD/NotificationLabel
-@onready var event_text = $CanvasLayer/HUD/EventLog/EventText
-@onready var traits_label = $CanvasLayer/HUD/BottomPanel/TraitsLabel
-@onready var end_screen = $CanvasLayer/EndScreen
+# ── HUD (add these to your CanvasLayer/HUD — works without them too) ──
+@onready var infection_label = $CanvasLayer/HUD/InfectionLabel if has_node("CanvasLayer/HUD/InfectionLabel") else null
+@onready var detection_label = $CanvasLayer/HUD/DetectionLabel if has_node("CanvasLayer/HUD/DetectionLabel") else null
+@onready var resources_label = $CanvasLayer/HUD/ResourcesLabel if has_node("CanvasLayer/HUD/ResourcesLabel") else null
+@onready var traits_label = $CanvasLayer/HUD/TraitsLabel if has_node("CanvasLayer/HUD/TraitsLabel") else null
+@onready var turn_label = $CanvasLayer/HUD/TurnLabel if has_node("CanvasLayer/HUD/TurnLabel") else null
+@onready var virus_name_label = $CanvasLayer/HUD/VirusNameLabel if has_node("CanvasLayer/HUD/VirusNameLabel") else null
+@onready var infection_bar = $CanvasLayer/HUD/InfectionBar if has_node("CanvasLayer/HUD/InfectionBar") else null
+@onready var detection_bar = $CanvasLayer/HUD/DetectionBar if has_node("CanvasLayer/HUD/DetectionBar") else null
+@onready var notification_label = $CanvasLayer/HUD/NotificationLabel if has_node("CanvasLayer/HUD/NotificationLabel") else null
+@onready var event_text = $CanvasLayer/HUD/EventLog/EventText if has_node("CanvasLayer/HUD/EventLog/EventText") else null
+@onready var end_screen = $CanvasLayer/EndScreen if has_node("CanvasLayer/EndScreen") else null
 
 # ── Map Data ──────────────────────────────────────────────────────
 var color_id_image: Image
@@ -33,45 +29,45 @@ var country_colors: Dictionary = {}
 var country_bboxes: Dictionary = {}
 var hovered_country: String = ""
 
-# ── Game State ────────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════
+#                        GAME STATE
+# ═════════════════════════════════════════════════════════════════
 var infected_countries: Array[String] = []
 var patched_countries: Array[String] = []
-var country_detection: Dictionary = {}    # country → Bayesian probability (0-1)
-var resources: int = 10
-var detection_level: float = 0.0          # Global detection meter (0-1)
+var country_detection: Dictionary = {}     # Bayesian prior per country
+var resources: int = 0
+var detection_level: float = 0.0           # 0 to 1 — THE ENEMY BAR
 var turn_count: int = 0
 var game_over: bool = false
+var game_started: bool = false             # true after player clicks first country
 
-# ── Virus Traits (evolved by Genetic Algorithm) ───────────────────
-var virus_speed: float = 1.0       # 1-10: higher = faster spread
-var virus_stealth: float = 1.0     # 1-10: higher = less detection
-var virus_resistance: float = 1.0  # 1-10: higher = harder to patch
+# ── Virus Traits (evolved by GA + player upgrades) ────────────────
+var virus_speed: float = 1.0
+var virus_stealth: float = 1.0
+var virus_resistance: float = 1.0
 
-# ── Virus Upgrades ──────────────────────────────────────────────────
+# ── Genetic Algorithm ─────────────────────────────────────────────
+var ga_population: Array = []
+const GA_POP_SIZE: int = 10
+const GA_MUTATION_RATE: float = 0.15
+var ga_generation: int = 0
+
+# ── Constants ─────────────────────────────────────────────────────
+const TOTAL_COUNTRIES: int = 7
+const WIN_THRESHOLD: float = 0.90          # Infect 90% to win
+const LOSE_THRESHOLD: float = 1.0          # Detection 100% = lose
+
+# ── Upgrades ──────────────────────────────────────────────────────
 var upgrades = {
-	"email_phishing":    {"branch": "TRANSMISSION", "cost": 5,  "bought": false, "requires": ""},
-	"cloud_exploit":     {"branch": "TRANSMISSION", "cost": 15, "bought": false, "requires": "email_phishing"},
-	"code_obfuscation":  {"branch": "STEALTH",      "cost": 8,  "bought": false, "requires": ""},
-	"fileless_malware":  {"branch": "STEALTH",      "cost": 20, "bought": false, "requires": "code_obfuscation"},
-	"registry_persist":  {"branch": "RESISTANCE",   "cost": 10, "bought": false, "requires": ""},
-	"anti_antivirus":    {"branch": "RESISTANCE",   "cost": 25, "bought": false, "requires": "registry_persist"},
-	"keylogger":         {"branch": "PAYLOAD",      "cost": 8,  "bought": false, "requires": ""},
-	"ransomware":        {"branch": "PAYLOAD",      "cost": 20, "bought": false, "requires": "keylogger"},
+	"email_phishing":   {"branch": "TRANSMISSION", "cost": 5,  "bought": false, "requires": ""},
+	"cloud_exploit":    {"branch": "TRANSMISSION", "cost": 15, "bought": false, "requires": "email_phishing"},
+	"code_obfuscation": {"branch": "STEALTH",      "cost": 8,  "bought": false, "requires": ""},
+	"fileless_malware": {"branch": "STEALTH",      "cost": 20, "bought": false, "requires": "code_obfuscation"},
+	"registry_persist": {"branch": "RESISTANCE",   "cost": 10, "bought": false, "requires": ""},
+	"anti_antivirus":   {"branch": "RESISTANCE",   "cost": 25, "bought": false, "requires": "registry_persist"},
+	"keylogger":        {"branch": "PAYLOAD",      "cost": 8,  "bought": false, "requires": ""},
+	"ransomware":       {"branch": "PAYLOAD",      "cost": 20, "bought": false, "requires": "keylogger"},
 }
-
-# ── Genetic Algorithm ───────────────────────────────────────────────
-var ga: GeneticAlgorithm = GeneticAlgorithm.new()
-var bayesian_ai: BayesianDefense = BayesianDefense.new()
-
-# ── Win/Lose Thresholds ──────────────────────────────────────────
-const WIN_THRESHOLD: float = 0.90     # Infect 90% of countries to win
-const LOSE_THRESHOLD: float = 1.0     # Detection hits 100% = lose
-const TOTAL_COUNTRIES: int = 7        # Total countries in your map
-
-# ── Upgrade Costs ─────────────────────────────────────────────────
-const SPEED_COST: int = 5
-const STEALTH_COST: int = 8
-const RESISTANCE_COST: int = 10
 
 # ── Network Graph ─────────────────────────────────────────────────
 var world_graph: Dictionary = {
@@ -84,11 +80,10 @@ var world_graph: Dictionary = {
 	"SAUDIARABIA": {"INDIA": 3.0}
 }
 
-# ── Camera / Interaction ──────────────────────────────────────────
+# ── Camera / Hover ────────────────────────────────────────────────
 var is_dragging: bool = false
 var last_mouse_pos: Vector2
 var hover_sprite: Sprite2D
-
 var country_hover_images: Dictionary = {
 	"CHINA": "res://Assets/ASIAMAP_REALISTIC_CHINA.png",
 	"INDIA": "res://Assets/ASIAMAP_REALISTIC_INDIA.png",
@@ -98,28 +93,12 @@ var country_hover_images: Dictionary = {
 	"PHILIPPINES": "res://Assets/ASIAMAP_REALISTIC_MAP_PHILIPPINES.png",
 	"SAUDIARABIA": "res://Assets/ASIAMAP_REALISTIC_MAP_SAUDIARABIA.png"
 }
-
 var country_hover_textures: Dictionary = {}
 
 
-# ── NOTIFICATION POPUP (fades out after 2 seconds) ────────────────
-func show_notification(message: String, color: Color = Color.RED):
-	if notification_label:
-		notification_label.text = message
-		notification_label.modulate = color
-		notification_label.modulate.a = 1.0
-		var tween = create_tween()
-		tween.tween_interval(1.5)
-		tween.tween_property(notification_label, "modulate:a", 0.0, 0.5)
-
-# ── EVENT LOG (scrolling text at bottom-right) ────────────────────
-func log_event(message: String, color: String = "white"):
-	if event_text:
-		event_text.append_text("[color=%s]> %s[/color]\n" % [color, message])
-
-# ═══════════════════════════════════════════════════════════════════
-# READY
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                          READY
+# ═════════════════════════════════════════════════════════════════
 
 func _ready():
 	# Load Color ID map
@@ -135,9 +114,9 @@ func _ready():
 			country_colors[c.to_html(false)] = country_name
 			country_bboxes[country_name] = data[country_name]["bbox"]
 	
-	# Initialize Bayesian priors for all countries
+	# Init Bayesian priors
 	for country in world_graph.keys():
-		country_detection[country] = 0.05  # Low initial suspicion
+		country_detection[country] = 0.05
 	
 	# Preload hover textures
 	for country in country_hover_images:
@@ -152,38 +131,38 @@ func _ready():
 	map_sprite.move_child(hover_sprite, 0)
 	hover_sprite.hide()
 	
-	# Initialize Genetic Algorithm population
-	ga.init_population()
+	# Init GA
+	_ga_init_population()
 	
 	# Hide end screen
 	if end_screen:
 		end_screen.hide()
 	
-	# Update virus name label
+	# Virus name
 	if virus_name_label:
-		virus_name_label.text = get_node("/root/Global").virus_name
+		virus_name_label.text = Global.virus_name
 	
-	# ── GAME TICK TIMER ───────────────────────────────────────────
-	# Main game loop runs every 0.05s (visual dots)
+	# ── DOT TIMER (visual — fast) ────────────────────────────────
 	var dot_timer = Timer.new()
 	dot_timer.wait_time = 0.05
 	dot_timer.autostart = true
 	dot_timer.timeout.connect(_on_dot_tick)
 	add_child(dot_timer)
 	
-	# Turn timer: every 2 seconds, run a full game turn
+	# ── TURN TIMER (game logic — every 2s) ───────────────────────
 	var turn_timer = Timer.new()
 	turn_timer.wait_time = 2.0
 	turn_timer.autostart = true
 	turn_timer.timeout.connect(_on_turn_tick)
 	add_child(turn_timer)
 	
+	log_event("Click a country to start the infection...", "yellow")
 	_update_hud()
 
 
-# ═══════════════════════════════════════════════════════════════════
-# INPUT HANDLING (camera + country click)
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                         INPUT
+# ═════════════════════════════════════════════════════════════════
 
 func _unhandled_input(event):
 	if game_over:
@@ -194,59 +173,49 @@ func _unhandled_input(event):
 			if event.pressed:
 				is_dragging = true
 				last_mouse_pos = event.position
-				
-				if hovered_country != "":
-					if infected_countries.size() == 0:
-						# Click to start infection
-						_start_infection(hovered_country)
-					elif hovered_country in infected_countries or hovered_country in patched_countries:
-						# Open CRT Monitor if clicking an infected/patched country
-						var crt = $CanvasLayer.get_node_or_null("CRTMonitor")
-						if crt:
-							crt.show()
+				if hovered_country != "" and not game_started:
+					_start_infection(hovered_country)
 			else:
 				is_dragging = false
 		
-		# Camera Zoom
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			camera.zoom *= 1.1
-			if camera.zoom.x > 4.0:
-				camera.zoom = Vector2(4.0, 4.0)
+			camera.zoom = camera.zoom.clamp(Vector2(1,1), Vector2(4,4))
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			camera.zoom /= 1.1
-			if camera.zoom.x < 1.0:
-				camera.zoom = Vector2(1.0, 1.0)
+			camera.zoom = camera.zoom.clamp(Vector2(1,1), Vector2(4,4))
 	
 	elif event is InputEventMouseMotion:
 		if is_dragging:
-			var delta = event.position - last_mouse_pos
-			camera.position -= delta / camera.zoom
+			camera.position -= (event.position - last_mouse_pos) / camera.zoom
 			last_mouse_pos = event.position
 		_check_hover(event.position)
 	
-	# ── UPGRADE HOTKEYS ───────────────────────────────────────────
+	# Upgrade hotkeys
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
-			KEY_1: _upgrade_trait("speed")
-			KEY_2: _upgrade_trait("stealth")
-			KEY_3: _upgrade_trait("resistance")
+			KEY_1: buy_upgrade("email_phishing") if not upgrades["email_phishing"]["bought"] else buy_upgrade("cloud_exploit")
+			KEY_2: buy_upgrade("code_obfuscation") if not upgrades["code_obfuscation"]["bought"] else buy_upgrade("fileless_malware")
+			KEY_3: buy_upgrade("registry_persist") if not upgrades["registry_persist"]["bought"] else buy_upgrade("anti_antivirus")
+			KEY_4: buy_upgrade("keylogger") if not upgrades["keylogger"]["bought"] else buy_upgrade("ransomware")
 
 
-# ═══════════════════════════════════════════════════════════════════
-# GAME FLOW
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                      START INFECTION
+# ═════════════════════════════════════════════════════════════════
 
 func _start_infection(country: String):
+	game_started = true
 	infected_countries.append(country)
-	log_event("%s started infecting %s!" % [get_node("/root/Global").virus_name, country], "red")
-	show_notification("INFECTED: " + country, Color(0.9, 0.2, 0.2))
-	_earn_resources(5)
+	resources = 10
+	log_event("%s deployed in %s!" % [Global.virus_name, country], "red")
+	show_notification("VIRUS DEPLOYED: " + country, Color(0.9, 0.15, 0.15))
 	_update_hud()
 
 
-# ═══════════════════════════════════════════════════════════════════
-# DOT TICK (visual only — every 0.05s)
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                    DOT TICK (visual — every 0.05s)
+# ═════════════════════════════════════════════════════════════════
 
 func _on_dot_tick():
 	if infected_countries.size() == 0 or game_over:
@@ -255,293 +224,382 @@ func _on_dot_tick():
 	spawn_dot_in_country(random_country)
 
 
-# ═══════════════════════════════════════════════════════════════════
-# TURN TICK (full game turn — every 2s)
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#              THE MAIN GAME LOOP — EVERY 2 SECONDS
+# ═════════════════════════════════════════════════════════════════
 
 func _on_turn_tick():
-	if infected_countries.size() == 0 or game_over:
+	if not game_started or game_over:
 		return
 	
 	turn_count += 1
 	
-	# ── STEP 1: Genetic Algorithm — evolve virus traits ───────────
-	var best_genome = ga.evolve(infected_countries.size(), detection_level, patched_countries.size())
-	virus_speed = best_genome["speed"]
-	virus_stealth = best_genome["stealth"]
-	virus_resistance = best_genome["resistance"]
+	# ══════════════ VIRUS SIDE ══════════════
 	
-	log_event("Gen %d evolved — SPD:%.1f STL:%.1f RES:%.1f" % [
-		ga.generation, virus_speed, virus_stealth, virus_resistance
-	], "yellow")
+	# 1. Genetic Algorithm evolves the virus
+	_ga_evolve()
 	
-	# ── STEP 2: Dijkstra — spread virus with dynamic weights ─────
+	# 2. Dijkstra spreads the virus
 	_dijkstra_spread()
 	
-	# ── STEP 3: Bayesian Defense — detect and patch ───────────────
-	var defense_results = bayesian_ai.process_turn(
-		world_graph.keys(),
-		infected_countries,
-		patched_countries,
-		country_detection,
-		virus_stealth,
-		virus_resistance
-	)
-	
-	for target in defense_results["resisted"]:
-		log_event("Defense tried to patch %s — VIRUS RESISTED!" % target, "orange")
-		show_notification("RESISTED PATCH: " + target, Color(1.0, 0.6, 0.1))
-		
-	for target in defense_results["patched"]:
-		infected_countries.erase(target)
-		patched_countries.append(target)
-		detection_level = clampf(detection_level + 0.05, 0.0, 1.0)
-		log_event("PATCHED: %s — removed from infected!" % target, "green")
-		show_notification("COUNTRY PATCHED: " + target, Color(0.2, 0.8, 0.2))
-	
-	# ── STEP 4: Earn resources from infected countries ────────────
-	_earn_resources(infected_countries.size())
-	
+	# 3. Earn resources
+	var income = infected_countries.size()
 	if upgrades["keylogger"]["bought"]:
-		_earn_resources(infected_countries.size() * 2)
+		income += infected_countries.size() * 2
 	if upgrades["ransomware"]["bought"]:
-		_earn_resources(5)
+		income += 5
+	resources += income
 	
-	# ── STEP 5: Raise global detection ────────────────────────────
+	# ══════════════ DEFENSE SIDE — THE FIGHT ══════════════
+	
+	# Detection rises every turn (stealth slows it down)
 	var stealth_mod = 1.0 - clampf(virus_stealth * 0.07, 0.0, 0.7)
-	detection_level = clampf(detection_level + 0.01 * stealth_mod, 0.0, 1.0)
+	detection_level = clampf(detection_level + 0.015 * stealth_mod, 0.0, 1.0)
 	
-	if detection_level > 0.75:
-		log_event("WARNING: Detection at %.0f%%!" % [detection_level * 100], "red")
-		show_notification("CRITICAL: DETECTION %.0f%%!" % [detection_level * 100], Color(1.0, 0.2, 0.2))
-	elif detection_level > 0.50:
-		log_event("Caution: Detection rising — %.0f%%" % [detection_level * 100], "orange")
+	# Defense AI gets MORE AGGRESSIVE as detection rises
+	# Below 20% — no defense (player has a head start to build up)
+	# 20-50% — defense checks once per turn
+	# 50-75% — defense checks twice per turn  
+	# 75%+   — defense checks THREE times per turn (panic mode!)
 	
-	# ── STEP 6: Check win/lose ────────────────────────────────────
+	if detection_level >= 0.75:
+		log_event("CRITICAL: Defense in MAXIMUM ALERT!", "red")
+		_bayesian_defense()
+		_bayesian_defense()
+		_bayesian_defense()
+	elif detection_level >= 0.50:
+		log_event("WARNING: Defense increasing patrols!", "orange")
+		_bayesian_defense()
+		_bayesian_defense()
+	elif detection_level >= 0.20:
+		_bayesian_defense()
+	# Below 20% = free reign, no defense yet
+	
+	# Detection milestone warnings
+	if turn_count == 1:
+		log_event("Virus is spreading undetected...", "yellow")
+	
+	# ══════════════ CHECK WIN/LOSE ══════════════
 	_check_win_lose()
-	
-	# ── STEP 7: Update HUD ────────────────────────────────────────
 	_update_hud()
 	
-	# Debug log
-	print("[Turn %d] Infected: %d/%d | Detection: %.0f%% | Resources: %d | Speed:%.1f Stealth:%.1f Resist:%.1f" % [
+	# Console log
+	print("[Turn %d] Infected: %d/%d | Detection: %.0f%% | Resources: %d | SPD:%.1f STL:%.1f RES:%.1f" % [
 		turn_count, infected_countries.size(), TOTAL_COUNTRIES,
 		detection_level * 100, resources,
 		virus_speed, virus_stealth, virus_resistance
 	])
 
 
-# ═══════════════════════════════════════════════════════════════════
-# DIJKSTRA SPREAD (with dynamic weights)
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#               DIJKSTRA SPREAD (with dynamic weights)
+# ═════════════════════════════════════════════════════════════════
 
 func _dijkstra_spread():
-	# Spread chance scales with Speed trait
-	# Speed 1 → 5% chance, Speed 10 → ~40% chance per turn
-	var spread_chance = 0.05 + (virus_speed - 1.0) * 0.04
-	
-	if randf() < spread_chance:
-		# Run Dijkstra with dynamic weights
-		var result = Dijkstra.calculate_shortest_paths(
-			world_graph,
-			infected_countries,
-			virus_speed,
-			country_detection,
-			patched_countries
-		)
-		
-		# Get sorted list of spread targets
-		var targets = Dijkstra.get_spread_targets(
-			result["distances"], infected_countries, patched_countries
-		)
-		
-		if targets.size() > 0:
-			var target = targets[0]  # Closest uninfected country
-			var country = target["country"]
-			var spread_from = result["previous"][country]
-			
-			infected_countries.append(country)
-			log_event("Virus spread: %s → %s" % [spread_from, country], "red")
-			show_notification("SPREADING TO: " + country, Color(0.9, 0.15, 0.15))
-			
-			# Bonus resources for new infection
-			_earn_resources(3)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# RESOURCE ECONOMY & UPGRADES
-# ═══════════════════════════════════════════════════════════════════
-
-func _earn_resources(amount: int):
-	resources += amount
-
-func _upgrade_trait(trait_name: String):
-	if game_over:
-		return
-		
-	var current = 0.0
-	match trait_name:
-		"speed": current = virus_speed
-		"stealth": current = virus_stealth
-		"resistance": current = virus_resistance
-
-	if current >= 10.0:
-		log_event("%s is already at MAX level!" % trait_name, "orange")
-		show_notification(trait_name.to_upper() + " IS MAXED!", Color(1.0, 0.6, 0.1))
+	if infected_countries.size() == 0:
 		return
 	
-	var cost = 0
-	match trait_name:
-		"speed": cost = SPEED_COST
-		"stealth": cost = STEALTH_COST
-		"resistance": cost = RESISTANCE_COST
+	# Spread chance scales with Speed
+	# Speed 1 → 8%, Speed 10 → 44%
+	var spread_chance = 0.08 + (virus_speed - 1.0) * 0.04
 	
-	if resources >= cost:
-		resources -= cost
-		match trait_name:
-			"speed":
-				virus_speed = minf(virus_speed + 1.0, 10.0)
-				log_event("Upgraded %s → Lv %.0f (-%d resources)" % [trait_name, virus_speed, cost], "cyan")
-				show_notification("UPGRADED " + trait_name.to_upper(), Color(0.3, 0.9, 0.9))
-			"stealth":
-				virus_stealth = minf(virus_stealth + 1.0, 10.0)
-				log_event("Upgraded %s → Lv %.0f (-%d resources)" % [trait_name, virus_stealth, cost], "cyan")
-				show_notification("UPGRADED " + trait_name.to_upper(), Color(0.3, 0.9, 0.9))
-			"resistance":
-				virus_resistance = minf(virus_resistance + 1.0, 10.0)
-				log_event("Upgraded %s → Lv %.0f (-%d resources)" % [trait_name, virus_resistance, cost], "cyan")
-				show_notification("UPGRADED " + trait_name.to_upper(), Color(0.3, 0.9, 0.9))
-		_update_hud()
+	if randf() > spread_chance:
+		return  # No spread this turn
+	
+	# Run Dijkstra with dynamic weights
+	var result = Dijkstra.calculate_shortest_paths(
+		world_graph, infected_countries,
+		virus_speed, country_detection, patched_countries
+	)
+	var distances = result["distances"]
+	var previous = result["previous"]
+	
+	# Get all possible targets sorted by distance
+	var targets = Dijkstra.get_spread_targets(distances, infected_countries, [])
+	
+	if targets.size() == 0:
+		return
+	
+	# How many countries can we infect this turn?
+	# Speed 1-3 → 1, Speed 4-6 → 2, Speed 7-10 → 3
+	# Cloud exploit adds +1
+	var max_spread = int(clampf(virus_speed / 3.5, 1, 3))
+	if upgrades["cloud_exploit"]["bought"]:
+		max_spread += 1
+	
+	var spread_count = 0
+	for target_data in targets:
+		if spread_count >= max_spread:
+			break
+		
+		var country = target_data["country"]
+		
+		if country in infected_countries:
+			continue
+		
+		# Patched countries are harder to re-infect
+		if country in patched_countries:
+			var reinfect_chance = virus_resistance * 0.08
+			if not upgrades["anti_antivirus"]["bought"]:
+				reinfect_chance *= 0.5  # Half chance without upgrade
+			if randf() > reinfect_chance:
+				continue  # Failed to re-infect
+			patched_countries.erase(country)
+			log_event("RE-INFECTED %s! Broke through defenses!" % country, "red")
+			show_notification("RE-INFECTED: " + country + "!", Color(1.0, 0.3, 0.1))
+		
+		infected_countries.append(country)
+		spread_count += 1
+		
+		var spread_from = previous.get(country, "unknown")
+		log_event("%s spread: %s → %s" % [Global.virus_name, spread_from, country], "red")
+		show_notification("INFECTED: " + country, Color(0.9, 0.15, 0.15))
+		resources += 3
+
+
+# ═════════════════════════════════════════════════════════════════
+#         BAYESIAN DEFENSE — THE AI THAT FIGHTS THE PLAYER
+# ═════════════════════════════════════════════════════════════════
+#
+# This is the ENEMY. Every turn it:
+# 1. Observes signals from each country (infected = louder signal)
+# 2. Updates P(Infected | Signal) using Bayes' theorem
+# 3. If probability > threshold → PATCHES the country
+# 4. Patching = removes infection, country turns green again
+#
+# The player fights this by:
+# - Buying STEALTH upgrades (reduces signal = harder to detect)
+# - Buying RESISTANCE upgrades (virus survives the patch)
+# - Spreading FAST enough to outrun the defense
+# ═════════════════════════════════════════════════════════════════
+
+const PATCH_THRESHOLD: float = 0.65
+const P_SIGNAL_INFECTED: float = 0.85
+const P_SIGNAL_NOT_INFECTED: float = 0.15
+
+func _bayesian_defense():
+	var best_target = ""
+	var best_posterior = 0.0
+	
+	for country in world_graph.keys():
+		if country in patched_countries:
+			continue
+		
+		# ── OBSERVE: infected countries emit suspicious signals ───
+		var signal_strength = _observe_signal(country)
+		
+		# ── BAYES UPDATE: calculate P(Infected | Signal) ─────────
+		var prior = country_detection.get(country, 0.05)
+		var p_s_i = lerpf(0.0, P_SIGNAL_INFECTED, signal_strength)
+		var p_s_ni = lerpf(0.0, P_SIGNAL_NOT_INFECTED, signal_strength)
+		var numerator = p_s_i * prior
+		var evidence = numerator + p_s_ni * (1.0 - prior)
+		var posterior = numerator / evidence if evidence > 0 else prior
+		
+		country_detection[country] = posterior
+		
+		# Decay non-suspicious countries
+		if posterior < PATCH_THRESHOLD * 0.4:
+			country_detection[country] = maxf(0.01, posterior - 0.02)
+		
+		# Find the most suspicious infected country
+		if posterior > best_posterior and country in infected_countries:
+			best_posterior = posterior
+			best_target = country
+	
+	# ── PATCH: if confident enough, remove the infection! ────────
+	if best_target != "" and best_posterior >= PATCH_THRESHOLD:
+		
+		# RESISTANCE CHECK — virus might survive the patch!
+		var resist_chance = virus_resistance * 0.07
+		if upgrades["registry_persist"]["bought"]:
+			resist_chance += 0.15
+		if upgrades["anti_antivirus"]["bought"]:
+			resist_chance += 0.25
+		
+		if randf() < resist_chance:
+			# VIRUS RESISTED!
+			log_event("Defense tried to patch %s — VIRUS RESISTED! (%.0f%%)" % [
+				best_target, resist_chance * 100], "orange")
+			show_notification("RESISTED PATCH: " + best_target, Color(1.0, 0.6, 0.1))
+			return
+		
+		# ── THE PATCH HAPPENS — player LOSES this country ────────
+		infected_countries.erase(best_target)
+		patched_countries.append(best_target)
+		detection_level = clampf(detection_level + 0.03, 0.0, 1.0)
+		
+		# CLEAR THE DOTS — visually show the country is cured
+		_clear_dots_in_country(best_target)
+		
+		log_event("SECURED: %s — defense contained the virus! (P=%.0f%%)" % [
+			best_target, best_posterior * 100], "green")
+		show_notification("COUNTRY SECURED: " + best_target, Color(0.2, 0.9, 0.3))
+		
+		# Tell the player what happened
+		if infected_countries.size() == 0 and patched_countries.size() > 0:
+			log_event("ALL COUNTRIES PATCHED! Spread faster or upgrade resistance!", "red")
+			show_notification("ALL INFECTIONS CLEARED!", Color(1, 0.2, 0.2))
+
+func _observe_signal(country: String) -> float:
+	var stealth_mod = 1.0 - clampf(virus_stealth * 0.07, 0.0, 0.7)
+	if upgrades["fileless_malware"]["bought"]:
+		stealth_mod *= 0.5  # Fileless malware halves signal
+	if upgrades["code_obfuscation"]["bought"]:
+		stealth_mod *= 0.7  # Code obfuscation reduces signal
+	
+	if country in infected_countries:
+		return randf_range(0.4, 1.0) * stealth_mod
 	else:
-		log_event("Not enough resources! Need %d, have %d" % [cost, resources], "red")
-		show_notification("NOT ENOUGH RESOURCES!", Color(1.0, 0.2, 0.2))
+		return randf_range(0.0, 0.2)
+
+func _clear_dots_in_country(_country: String):
+	# Clear all dots and let only infected countries respawn them
+	for child in dot_renderer.get_children():
+		child.queue_free()
 
 
-# ── UPGRADE LOGIC ──────────────────────────────────────────────────
+# ═════════════════════════════════════════════════════════════════
+#                    GENETIC ALGORITHM
+# ═════════════════════════════════════════════════════════════════
+
+func _ga_init_population():
+	ga_population.clear()
+	for i in range(GA_POP_SIZE):
+		ga_population.append({
+			"speed": randf_range(1.0, 5.0),
+			"stealth": randf_range(1.0, 5.0),
+			"resistance": randf_range(1.0, 5.0)
+		})
+
+func _ga_fitness(g: Dictionary) -> float:
+	return (infected_countries.size() * g["speed"]) \
+		- (detection_level * 100.0 / maxf(1.0, g["stealth"])) \
+		+ (g["resistance"] * patched_countries.size() * 0.5)
+
+func _ga_evolve():
+	ga_generation += 1
+	ga_population.sort_custom(func(a, b): return _ga_fitness(a) > _ga_fitness(b))
+	
+	var next: Array = [ga_population[0].duplicate(), ga_population[1].duplicate()]
+	
+	while next.size() < GA_POP_SIZE:
+		# Tournament select parents
+		var pa = _ga_pick_parent()
+		var pb = _ga_pick_parent()
+		# Crossover
+		var child = {"speed": pa["speed"], "stealth": pb["stealth"], "resistance": pa["resistance"]}
+		# Mutate
+		if randf() < GA_MUTATION_RATE:
+			child["speed"] = clampf(child["speed"] + randf_range(-1.5, 1.5), 1.0, 10.0)
+		if randf() < GA_MUTATION_RATE:
+			child["stealth"] = clampf(child["stealth"] + randf_range(-1.5, 1.5), 1.0, 10.0)
+		if randf() < GA_MUTATION_RATE:
+			child["resistance"] = clampf(child["resistance"] + randf_range(-1.5, 1.5), 1.0, 10.0)
+		next.append(child)
+	
+	ga_population = next
+	
+	# Apply best genome (GA auto-evolves ON TOP of player upgrades)
+	var best = ga_population[0]
+	virus_speed = maxf(virus_speed, best["speed"])
+	virus_stealth = maxf(virus_stealth, best["stealth"])
+	virus_resistance = maxf(virus_resistance, best["resistance"])
+
+func _ga_pick_parent() -> Dictionary:
+	var best = ga_population[randi() % ga_population.size()]
+	var best_f = _ga_fitness(best)
+	for i in range(2):
+		var c = ga_population[randi() % ga_population.size()]
+		var f = _ga_fitness(c)
+		if f > best_f:
+			best = c
+			best_f = f
+	return best
+
+
+# ═════════════════════════════════════════════════════════════════
+#                    UPGRADE SYSTEM
+# ═════════════════════════════════════════════════════════════════
 
 func buy_upgrade(upgrade_id: String):
-	var upgrade = upgrades[upgrade_id]
+	if game_over or not upgrades.has(upgrade_id):
+		return
 	
-	if upgrade["bought"]:
+	var u = upgrades[upgrade_id]
+	
+	if u["bought"]:
 		show_notification("ALREADY UNLOCKED!", Color(1.0, 0.6, 0.1))
 		return
-	
-	if upgrade["requires"] != "" and not upgrades[upgrade["requires"]]["bought"]:
+	if u["requires"] != "" and not upgrades[u["requires"]]["bought"]:
 		show_notification("UNLOCK PREVIOUS TIER FIRST!", Color(1.0, 0.2, 0.2))
-		log_event("Requires: %s" % upgrade["requires"].replace("_", " "), "red")
+		return
+	if resources < u["cost"]:
+		show_notification("NEED %d RESOURCES! (have %d)" % [u["cost"], resources], Color(1.0, 0.2, 0.2))
 		return
 	
-	if resources < upgrade["cost"]:
-		show_notification("NEED %d RESOURCES!" % upgrade["cost"], Color(1.0, 0.2, 0.2))
-		return
+	resources -= u["cost"]
+	u["bought"] = true
 	
-	resources -= upgrade["cost"]
-	upgrade["bought"] = true
-	_apply_upgrade(upgrade_id)
-	log_event("UNLOCKED: %s" % upgrade_id.replace("_", " ").to_upper(), "cyan")
+	match upgrade_id:
+		"email_phishing":
+			virus_speed = clampf(virus_speed + 1.5, 1, 10)
+			log_event("EMAIL PHISHING: spread chance +15%!", "red")
+		"cloud_exploit":
+			virus_speed = clampf(virus_speed + 3.0, 1, 10)
+			log_event("CLOUD EXPLOIT: spread to multiple countries!", "red")
+		"code_obfuscation":
+			virus_stealth = clampf(virus_stealth + 3.0, 1, 10)
+			log_event("CODE OBFUSCATION: detection slowed 30%!", "cyan")
+		"fileless_malware":
+			virus_stealth = clampf(virus_stealth + 5.0, 1, 10)
+			log_event("FILELESS MALWARE: Bayesian signals halved!", "cyan")
+		"registry_persist":
+			virus_resistance = clampf(virus_resistance + 3.0, 1, 10)
+			log_event("REGISTRY PERSISTENCE: 30% patch resistance!", "green")
+		"anti_antivirus":
+			virus_resistance = clampf(virus_resistance + 5.0, 1, 10)
+			log_event("ANTI-ANTIVIRUS: 60% resistance + re-infection!", "green")
+		"keylogger":
+			log_event("KEYLOGGER: +2 resources per country per turn!", "purple")
+		"ransomware":
+			log_event("RANSOMWARE: +5 flat resources per turn!", "purple")
+	
 	show_notification("UNLOCKED: " + upgrade_id.replace("_", " ").to_upper(), Color(0.3, 0.9, 0.9))
 	_update_hud()
 
-func _apply_upgrade(id: String):
-	match id:
-		"email_phishing":
-			virus_speed += 1.5
-			log_event("+15% spread chance", "red")
-		"cloud_exploit":
-			virus_speed += 3.0
-			log_event("Spread to 2 countries per turn!", "red")
-		"code_obfuscation":
-			virus_stealth += 3.0
-			log_event("Detection slowed by 30%", "blue")
-		"fileless_malware":
-			virus_stealth += 5.0
-			log_event("Bayesian signals halved!", "blue")
-		"registry_persist":
-			virus_resistance += 3.0
-			log_event("30% patch resistance", "green")
-		"anti_antivirus":
-			virus_resistance += 6.0
-			log_event("60% resistance + re-infection!", "green")
-		"keylogger":
-			log_event("+2 resources per country per turn!", "purple")
-		"ransomware":
-			log_event("+5 resources per turn!", "purple")
 
-# ── CRT MONITOR UI CALLBACKS ──────────────────────────────────────
-func _on_email_phishing_pressed():
-	buy_upgrade("email_phishing")
-
-func _on_cloud_exploit_pressed():
-	buy_upgrade("cloud_exploit")
-	
-func _on_code_obfuscation_pressed():
-	buy_upgrade("code_obfuscation")
-	
-func _on_fileless_malware_pressed():
-	buy_upgrade("fileless_malware")
-
-func _on_registry_persist_pressed():
-	buy_upgrade("registry_persist")
-
-func _on_anti_antivirus_pressed():
-	buy_upgrade("anti_antivirus")
-
-func _on_keylogger_pressed():
-	buy_upgrade("keylogger")
-
-func _on_ransomware_pressed():
-	buy_upgrade("ransomware")
-
-# ═══════════════════════════════════════════════════════════════════
-# HUD BUTTON CALLBACKS
-# ═══════════════════════════════════════════════════════════════════
-
-func _on_btn_speed_pressed():
-	_upgrade_trait("speed")
-
-func _on_btn_stealth_pressed():
-	_upgrade_trait("stealth")
-
-func _on_btn_resistance_pressed():
-	_upgrade_trait("resistance")
-
-
-# ═══════════════════════════════════════════════════════════════════
-# WIN / LOSE
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                    WIN / LOSE
+# ═════════════════════════════════════════════════════════════════
 
 func _check_win_lose():
-	var infection_rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
+	var rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
 	
-	if infection_rate >= WIN_THRESHOLD:
+	if rate >= WIN_THRESHOLD:
 		_end_game(true)
 	elif detection_level >= LOSE_THRESHOLD:
 		_end_game(false)
 
-func _end_game(player_won: bool):
+func _end_game(won: bool):
 	game_over = true
-	
-	if player_won:
-		log_event("=== INFECTION COMPLETE ===", "red")
-		show_notification("YOU WIN — NETWORK COMPROMISED", Color(0.9, 0.1, 0.1))
+	if won:
+		log_event("═══ %s HAS CONQUERED THE NETWORK! ═══" % Global.virus_name, "red")
+		show_notification("YOU WIN — NETWORK COMPROMISED!", Color(0.9, 0.1, 0.1))
 	else:
-		log_event("=== SYSTEM SECURED ===", "green")
-		show_notification("YOU LOSE — VIRUS CONTAINED", Color(0.2, 0.8, 0.2))
+		log_event("═══ CYBERSECURITY AI CONTAINED THE THREAT ═══", "green")
+		show_notification("YOU LOSE — VIRUS CONTAINED!", Color(0.2, 0.9, 0.3))
 	
-	# Show end screen if it exists
 	if end_screen:
 		end_screen.show()
-		var title_node = end_screen.get_node_or_null("Title")
-		if title_node:
-			title_node.text = "INFECTION COMPLETE" if player_won else "SYSTEM SECURED"
 
 
-# ═══════════════════════════════════════════════════════════════════
-# HUD UPDATE
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                    HUD UPDATE
+# ═════════════════════════════════════════════════════════════════
 
 func _update_hud():
-	var infection_rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
+	var rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
 	
 	if infection_label:
 		infection_label.text = "INFECTED: %d/%d" % [infected_countries.size(), TOTAL_COUNTRIES]
@@ -549,32 +607,49 @@ func _update_hud():
 		detection_label.text = "DETECTION: %.0f%%" % [detection_level * 100]
 	if resources_label:
 		resources_label.text = "RESOURCES: %d" % resources
+	if traits_label:
+		traits_label.text = "SPD: %.0f | STL: %.0f | RES: %.0f" % [
+			virus_speed, virus_stealth, virus_resistance]
+	if turn_label:
+		turn_label.text = "Turn: %d" % turn_count
 	if infection_bar:
-		infection_bar.scale.x = infection_rate
+		infection_bar.scale.x = rate
 	if detection_bar:
 		detection_bar.scale.x = detection_level
-	if turn_label:
-		turn_label.text = "Turn: %d" % [turn_count]
-	if traits_label:
-		traits_label.text = "SPD: %.0f  |  STL: %.0f  |  RES: %.0f" % [
-			virus_speed, virus_stealth, virus_resistance
-		]
 
 
-# ═══════════════════════════════════════════════════════════════════
-# HOVER DETECTION (unchanged from original)
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                 NOTIFICATION + EVENT LOG
+# ═════════════════════════════════════════════════════════════════
+
+func show_notification(message: String, color: Color = Color.RED):
+	if notification_label:
+		notification_label.text = message
+		notification_label.modulate = color
+		notification_label.modulate.a = 1.0
+		var tween = create_tween()
+		tween.tween_interval(1.5)
+		tween.tween_property(notification_label, "modulate:a", 0.0, 0.5)
+	print("[!] " + message)
+
+func log_event(message: String, color: String = "white"):
+	if event_text:
+		event_text.append_text("[color=%s]> %s[/color]\n" % [color, message])
+	print("> " + message)
+
+
+# ═════════════════════════════════════════════════════════════════
+#                 HOVER DETECTION (same as before)
+# ═════════════════════════════════════════════════════════════════
 
 func _check_hover(screen_pos: Vector2):
 	if not color_id_image:
 		return
-	
 	var global_mouse_pos = get_canvas_transform().affine_inverse() * screen_pos
 	var local_pos = map_sprite.to_local(global_mouse_pos)
 	
 	if local_pos.x >= 0 and local_pos.x < color_id_image.get_width() \
 		and local_pos.y >= 0 and local_pos.y < color_id_image.get_height():
-		
 		var local_pos_i = Vector2i(local_pos)
 		var pixel_color = color_id_image.get_pixelv(local_pos_i)
 		var html_color = pixel_color.to_html(false)
@@ -583,14 +658,12 @@ func _check_hover(screen_pos: Vector2):
 			var country = country_colors[html_color]
 			hovered_country = country
 			
-			# Show country name + status
+			# Show status next to country name
 			var status = ""
 			if country in infected_countries:
 				status = " [INFECTED]"
 			elif country in patched_countries:
 				status = " [PATCHED]"
-			else:
-				status = " (P=%.0f%%)" % [country_detection.get(country, 0.0) * 100]
 			
 			hover_label.text = country + status
 			
@@ -606,27 +679,22 @@ func _check_hover(screen_pos: Vector2):
 	hovered_country = ""
 
 
-# ═══════════════════════════════════════════════════════════════════
-# DOT SPAWNING (unchanged from original)
-# ═══════════════════════════════════════════════════════════════════
+# ═════════════════════════════════════════════════════════════════
+#                 DOT SPAWNING (same as before)
+# ═════════════════════════════════════════════════════════════════
 
 func spawn_dot_in_country(country_name: String):
 	var bbox = country_bboxes.get(country_name)
 	if not bbox:
 		return
-	
-	var max_attempts = 100
 	var target_color = null
-	
 	for html in country_colors:
 		if country_colors[html] == country_name:
 			target_color = html
 			break
-	
 	if not target_color:
 		return
-	
-	for i in range(max_attempts):
+	for i in range(100):
 		var rx = randi_range(bbox[0], bbox[2])
 		var ry = randi_range(bbox[1], bbox[3])
 		var pcolor = color_id_image.get_pixel(rx, ry).to_html(false)

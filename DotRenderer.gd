@@ -16,3 +16,7 @@ func _draw():
         
     for pos in dots:
         draw_string(font, pos, v_name, HORIZONTAL_ALIGNMENT_CENTER, -1, 16, dot_color)
+
+func clear_dots_in_country(country_name: String):
+    dots.clear()
+    queue_redraw()
