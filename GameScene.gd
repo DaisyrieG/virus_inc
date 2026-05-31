@@ -187,8 +187,10 @@ func _unhandled_input(event):
 					if not game_started:
 						_start_infection(hovered_country)
 					else:
-						if crt_monitor:
+						# Only open terminal if it is not already open
+						if crt_monitor and not crt_monitor.visible:
 							crt_monitor.show()
+							_refresh_terminal_buttons()
 			else:
 				is_dragging = false
 		
@@ -575,6 +577,7 @@ func _ga_pick_parent() -> Dictionary:
 # ═════════════════════════════════════════════════════════════════
 
 func buy_upgrade(upgrade_id: String):
+	print("[BUY] attempting: ", upgrade_id, " | resources: ", resources)
 	if game_over or not upgrades.has(upgrade_id):
 		return
 	
@@ -596,29 +599,79 @@ func buy_upgrade(upgrade_id: String):
 	match upgrade_id:
 		"email_phishing":
 			virus_speed = clampf(virus_speed + 1.5, 1, 10)
-			log_event("EMAIL PHISHING: spread chance +15%!", "red")
+			log_event("EMAIL PHISHING unlocked! Spread +15%", "red")
 		"cloud_exploit":
 			virus_speed = clampf(virus_speed + 3.0, 1, 10)
-			log_event("CLOUD EXPLOIT: spread to multiple countries!", "red")
+			log_event("CLOUD EXPLOIT unlocked! Multi-country spread!", "red")
 		"code_obfuscation":
 			virus_stealth = clampf(virus_stealth + 3.0, 1, 10)
-			log_event("CODE OBFUSCATION: detection slowed 30%!", "cyan")
+			log_event("CODE OBFUSCATION unlocked! Detection -30%!", "cyan")
 		"fileless_malware":
 			virus_stealth = clampf(virus_stealth + 5.0, 1, 10)
-			log_event("FILELESS MALWARE: Bayesian signals halved!", "cyan")
+			log_event("FILELESS MALWARE unlocked! Signals halved!", "cyan")
 		"registry_persist":
 			virus_resistance = clampf(virus_resistance + 3.0, 1, 10)
-			log_event("REGISTRY PERSISTENCE: 30% patch resistance!", "green")
+			log_event("REGISTRY PERSIST unlocked! 30% patch block!", "green")
 		"anti_antivirus":
 			virus_resistance = clampf(virus_resistance + 5.0, 1, 10)
-			log_event("ANTI-ANTIVIRUS: 60% resistance + re-infection!", "green")
+			log_event("ANTI-ANTIVIRUS unlocked! 60% resist + re-infect!", "green")
 		"keylogger":
-			log_event("KEYLOGGER: +2 resources per country per turn!", "purple")
+			log_event("KEYLOGGER unlocked! +2 res per country/turn!", "purple")
 		"ransomware":
-			log_event("RANSOMWARE: +5 flat resources per turn!", "purple")
+			log_event("RANSOMWARE unlocked! +5 flat res/turn!", "purple")
 	
-	show_notification("UNLOCKED: " + upgrade_id.replace("_", " ").to_upper(), Color(0.3, 0.9, 0.9))
+	show_notification("✓ UNLOCKED: " + upgrade_id.replace("_", " ").to_upper(), Color(0.3, 0.9, 0.9))
+	print("[BUY] success! ", upgrade_id, " bought. Resources left: ", resources)
 	_update_hud()
+	_refresh_terminal_buttons()
+	# Close terminal after buying so player sees the effect on the map
+	if crt_monitor:
+		await get_tree().create_timer(0.4).timeout
+		crt_monitor.hide()
+
+func _refresh_terminal_buttons():
+	# Update each button label so bought upgrades show [OWNED]
+	var map = {
+		"BtnEmail":      ["email_phishing",   "> EMAIL PHISHING"],
+		"BtnCloud":      ["cloud_exploit",    "> CLOUD EXPLOIT"],
+		"BtnObfuscation":["code_obfuscation", "> CODE OBFUSCATION"],
+		"BtnFileless":   ["fileless_malware", "> FILELESS MALWARE"],
+		"BtnRegistry":   ["registry_persist", "> REGISTRY PERSIST"],
+		"BtnAntiAV":     ["anti_antivirus",   "> ANTI-ANTIVIRUS"],
+		"BtnKeylogger":  ["keylogger",        "> KEYLOGGER"],
+		"BtnRansomware": ["ransomware",       "> RANSOMWARE"],
+	}
+	for btn_name in map:
+		var data    = map[btn_name]
+		var upg_id  = data[0]
+		var label   = data[1]
+		var upg     = upgrades[upg_id]
+		var cost    = upg["cost"]
+		var bought  = upg["bought"]
+		var afford  = resources >= cost
+		
+		# Try to find the button in the CRT scene
+		var base = "CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"
+		var paths = [
+			base + "/VBoxTrans/" + btn_name,
+			base + "/VBoxStealth/" + btn_name,
+			base + "/VBoxResist/" + btn_name,
+			base + "/VBoxPayload/" + btn_name,
+		]
+		for path in paths:
+			if has_node(path):
+				var btn = get_node(path)
+				if bought:
+					btn.text = label + " [OWNED]"
+					btn.add_theme_color_override("font_color", Color(0.3, 1.0, 0.3))
+				elif not afford:
+					btn.text = label + " [%d] (need %d)"\
+						.arg(cost).arg(cost - resources)
+					btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+				else:
+					btn.text = label + " [%d]" % cost
+					btn.add_theme_color_override("font_color", Color(0.0, 1.0, 0.0))
+				break
 
 
 # ═════════════════════════════════════════════════════════════════
