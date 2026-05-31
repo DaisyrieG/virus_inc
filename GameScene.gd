@@ -692,9 +692,33 @@ func _end_game(won: bool):
 		$CanvasLayer.add_child(overlay)
 
 	if won:
-		log_event("═══ %s CONQUERED THE NETWORK! ═══" % Global.virus_name, "red")
+		log_event("🏆 %s CONQUERED THE NETWORK! 🏆" % Global.virus_name, "red")
 	else:
-		log_event("═══ CYBERSECURITY AI CONTAINED THE THREAT ═══", "green")
+		log_event("🛑 CYBERSECURITY AI CONTAINED THE THREAT 🛑", "green")
+
+	# Add a dynamic stats overlay to the end screen
+	var stats_panel = PanelContainer.new()
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.05, 0.05, 0.05, 0.9)
+	style.border_color = Color(0.8, 0.2, 0.2) if won else Color(0.2, 0.8, 0.2)
+	style.border_width_left = 2; style.border_width_top = 2
+	style.border_width_right = 2; style.border_width_bottom = 2
+	stats_panel.add_theme_stylebox_override("panel", style)
+	stats_panel.anchor_left = 0.5; stats_panel.anchor_top = 0.70
+	stats_panel.anchor_right = 0.5; stats_panel.anchor_bottom = 0.70
+	stats_panel.offset_left = -280; stats_panel.offset_right = 280
+	stats_panel.offset_top = -30; stats_panel.offset_bottom = 30
+	
+	var stats_label = Label.new()
+	stats_label.text = "Turn %d | Infected: %d/%d | Detection: %.0f%%\nResources: %d | SPD: %.1f | STL: %.1f | RES: %.1f" % [
+		turn_count, infected_countries.size(), TOTAL_COUNTRIES, detection_level * 100,
+		resources, virus_speed, virus_stealth, virus_resistance
+	]
+	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stats_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	stats_label.add_theme_font_size_override("font_size", 18)
+	stats_panel.add_child(stats_label)
+	$CanvasLayer.add_child(stats_panel)
 
 	var btn_container = HBoxContainer.new()
 	btn_container.anchor_left   = 0.5;  btn_container.anchor_top    = 0.82
