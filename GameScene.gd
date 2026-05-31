@@ -329,9 +329,8 @@ func _dijkstra_spread():
 		return
 	
 	# Spread chance scales with Speed
-	# Speed 1 → 20%, Speed 5 → 40%, Speed 10 → 65%
-	# But capped so low speed is genuinely slow (tension!)
-	var spread_chance = 0.20 + (virus_speed - 1.0) * 0.05
+	# Speed 1 → 35%, Speed 5 → 55%, Speed 10 → 80%
+	var spread_chance = 0.35 + (virus_speed - 1.0) * 0.05
 	
 	if randf() > spread_chance:
 		defense_log_event("Spread attempt blocked...", "gray")
