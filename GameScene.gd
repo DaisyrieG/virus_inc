@@ -278,7 +278,25 @@ func _on_turn_tick():
 	_dijkstra_spread()
 	
 	# ── STEP 3: Bayesian Defense — detect and patch ───────────────
-	_bayesian_defense()
+	var defense_results = bayesian_ai.process_turn(
+		world_graph.keys(),
+		infected_countries,
+		patched_countries,
+		country_detection,
+		virus_stealth,
+		virus_resistance
+	)
+	
+	for target in defense_results["resisted"]:
+		log_event("Defense tried to patch %s — VIRUS RESISTED!" % target, "orange")
+		show_notification("RESISTED PATCH: " + target, Color(1.0, 0.6, 0.1))
+		
+	for target in defense_results["patched"]:
+		infected_countries.erase(target)
+		patched_countries.append(target)
+		detection_level = clampf(detection_level + 0.05, 0.0, 1.0)
+		log_event("PATCHED: %s — removed from infected!" % target, "green")
+		show_notification("COUNTRY PATCHED: " + target, Color(0.2, 0.8, 0.2))
 	
 	# ── STEP 4: Earn resources from infected countries ────────────
 	_earn_resources(infected_countries.size())
@@ -347,91 +365,6 @@ func _dijkstra_spread():
 			
 			# Bonus resources for new infection
 			_earn_resources(3)
-
-
-# ═══════════════════════════════════════════════════════════════════
-# BAYESIAN DEFENSE — CYBERSECURITY AI
-# ═══════════════════════════════════════════════════════════════════
-# Updates infection probability for each country using Bayes' theorem.
-# When P(Infected | Signal) > threshold, the defense patches that country.
-# ═══════════════════════════════════════════════════════════════════
-
-const BAYES_PATCH_THRESHOLD: float = 0.70
-const BAYES_P_SIGNAL_INFECTED: float = 0.85       # P(S | Infected)
-const BAYES_P_SIGNAL_NOT_INFECTED: float = 0.15   # P(S | Not Infected)
-const BAYES_MAX_PATCHES_PER_TURN: int = 1
-
-func _bayesian_defense():
-	var candidates: Array = []
-	
-	for country in world_graph.keys():
-		if country in patched_countries:
-			continue
-		
-		# ── Observe signal ────────────────────────────────────────
-		var signal_strength = _observe_signal(country)
-		
-		# ── Bayesian update ───────────────────────────────────────
-		var prior = country_detection.get(country, 0.05)
-		var posterior = _bayes_update(prior, signal_strength)
-		country_detection[country] = posterior
-		
-		# Decay prior for unsuspicious countries
-		if posterior < BAYES_PATCH_THRESHOLD * 0.5:
-			country_detection[country] = max(0.01, posterior - 0.03)
-		
-		# If above threshold AND actually infected → candidate for patching
-		if posterior >= BAYES_PATCH_THRESHOLD and country in infected_countries:
-			candidates.append({"country": country, "posterior": posterior})
-	
-	# Sort by highest posterior → patch most suspicious first
-	candidates.sort_custom(func(a, b): return a["posterior"] > b["posterior"])
-	
-	# Patch up to max per turn
-	var patches_this_turn = min(BAYES_MAX_PATCHES_PER_TURN, candidates.size())
-	for i in range(patches_this_turn):
-		var target = candidates[i]["country"]
-		
-		# Resistance trait reduces patch effectiveness
-		var resist_chance = clampf(virus_resistance * 0.08, 0.0, 0.8)
-		if randf() < resist_chance:
-			log_event("Defense tried to patch %s — VIRUS RESISTED!" % target, "orange")
-			show_notification("RESISTED PATCH: " + target, Color(1.0, 0.6, 0.1))
-			continue
-		
-		# Patch the country: remove from infected, add to patched
-		infected_countries.erase(target)
-		patched_countries.append(target)
-		detection_level = clampf(detection_level + 0.05, 0.0, 1.0)
-		
-		log_event("PATCHED: %s — removed from infected!" % target, "green")
-		show_notification("COUNTRY PATCHED: " + target, Color(0.2, 0.8, 0.2))
-
-func _observe_signal(country: String) -> float:
-	# Infected countries emit stronger anomaly signals
-	# Stealth trait reduces signal strength
-	var stealth_mod = 1.0 - clampf(virus_stealth * 0.07, 0.0, 0.7)
-	
-	if country in infected_countries:
-		return randf_range(0.5, 1.0) * stealth_mod
-	else:
-		return randf_range(0.0, 0.25)
-
-func _bayes_update(prior: float, signal_strength: float) -> float:
-	# Bayes' theorem:
-	# P(Infected | S) = P(S|Infected) * P(Infected)
-	#                    ─────────────────────────────────────────────
-	#                    P(S|Infected)*P(Infected) + P(S|¬Infected)*(1-P(Infected))
-	
-	var p_s_given_i = lerpf(0.0, BAYES_P_SIGNAL_INFECTED, signal_strength)
-	var p_s_given_ni = lerpf(0.0, BAYES_P_SIGNAL_NOT_INFECTED, signal_strength)
-	
-	var numerator = p_s_given_i * prior
-	var evidence = numerator + p_s_given_ni * (1.0 - prior)
-	
-	if evidence > 0.0:
-		return numerator / evidence
-	return prior
 
 
 # ═══════════════════════════════════════════════════════════════════
