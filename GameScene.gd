@@ -754,8 +754,12 @@ func _update_hud():
 	if resources_label:    resources_label.text    = "RESOURCES: %d" % resources
 	if traits_label:       traits_label.text       = "SPD: %.1f | STL: %.1f | RES: %.1f" % [virus_speed, virus_stealth, virus_resistance]
 	if turn_label:         turn_label.text         = "Turn: %d" % turn_count
-	if infection_bar:      infection_bar.scale.x   = rate
-	if detection_bar:      detection_bar.scale.x   = detection_level
+	if infection_bar:
+		var tween = create_tween()
+		tween.tween_property(infection_bar, "scale:x", rate, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	if detection_bar:
+		var tween = create_tween()
+		tween.tween_property(detection_bar, "scale:x", detection_level, 0.5).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 
 
 # ═════════════════════════════════════════════════════════════════
