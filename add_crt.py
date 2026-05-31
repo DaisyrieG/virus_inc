@@ -1,4 +1,11 @@
+import sys
 
+with open('GameScene.tscn', 'r', encoding='utf-8') as f:
+    content = f.read()
+
+# Make sure we don't add it twice
+if 'name="CRTMonitor"' not in content:
+    crt_nodes = """
 [node name="CRTMonitor" type="Control" parent="CanvasLayer"]
 visible = false
 layout_mode = 3
@@ -160,7 +167,16 @@ theme_override_colors/font_color = Color(0, 1, 0, 1)
 text = "> RANSOMWARE [20]"
 flat = true
 alignment = 0
-[connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/CloseBtn" to="CanvasLayer/CRTMonitor" method="hide"]
+"""
+    
+    # Insert node right before [connection signals...]
+    if '[connection signal=' in content:
+        content = content.replace('[connection signal=', crt_nodes + '\n[connection signal=', 1)
+    else:
+        content += crt_nodes
+    
+    # Add connections
+    connections = """[connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/CloseBtn" to="CanvasLayer/CRTMonitor" method="hide"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxTrans/BtnEmail" to="." method="_on_email_phishing_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxTrans/BtnCloud" to="." method="_on_cloud_exploit_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxStealth/BtnObfuscation" to="." method="_on_code_obfuscation_pressed"]
@@ -169,3 +185,10 @@ alignment = 0
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxResist/BtnAntiAV" to="." method="_on_anti_antivirus_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxPayload/BtnKeylogger" to="." method="_on_keylogger_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxPayload/BtnRansomware" to="." method="_on_ransomware_pressed"]
+"""
+    content += connections
+    
+    with open('GameScene.tscn', 'w', encoding='utf-8') as f:
+        f.write(content)
+
+print("GameScene.tscn patched.")
