@@ -1,16 +1,17 @@
-[gd_scene load_steps=4 format=3 uid="uid://dgame1234567"]
+[gd_scene load_steps=13 format=3 uid="uid://dgame1234567"]
 
 [ext_resource type="Script" path="res://GameScene.gd" id="1_script"]
-[ext_resource type="Texture2D" path="res://Assets/ASIAMAP_REALISTIC.png" id="2_map"]
+[ext_resource type="Texture2D" uid="uid://dkja5rvr28lkr" path="res://Assets/ASIAMAP_REALISTIC.png" id="2_map"]
 [ext_resource type="Script" path="res://DotRenderer.gd" id="3_dot"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_BarBG.png" id="hud_bar_bg"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_DetectionFill.png" id="hud_detection_fill"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_Btn_Speed.png" id="hud_btn_speed"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_Btn_Stealth.png" id="hud_btn_stealth"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_Btn_Resistance.png" id="hud_btn_resistance"]
-[ext_resource type="Texture2D" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
-
+[ext_resource type="Texture2D" uid="uid://u3xwx170p74h" path="res://Assets/HUD_BarBG.png" id="hud_bar_bg"]
+[ext_resource type="Texture2D" uid="uid://cmx71i2p6hpjs" path="res://Assets/HUD_Btn_Resistance.png" id="hud_btn_resistance"]
+[ext_resource type="Texture2D" uid="uid://u8or0xivxf32" path="res://Assets/HUD_Btn_Speed.png" id="hud_btn_speed"]
+[ext_resource type="Texture2D" uid="uid://d03fn3j4246nn" path="res://Assets/HUD_Btn_Stealth.png" id="hud_btn_stealth"]
+[ext_resource type="Texture2D" uid="uid://bb5jv8dxkslct" path="res://Assets/HUD_DetectionFill.png" id="hud_detection_fill"]
+[ext_resource type="Texture2D" uid="uid://b68wmbml4n3fh" path="res://Assets/HUD_InfectionFill.png" id="hud_infection_fill"]
+[ext_resource type="Texture2D" uid="uid://docx3op0eglqc" path="res://Assets/HUD_WinScreen.png" id="hud_win_screen"]
+[ext_resource type="Texture2D" uid="uid://bm7vrn6jnhrgh" path="res://Assets/COMPS WITH THE IMPPROVING.png" id="tex_comps"]
+[ext_resource type="Texture2D" uid="uid://drhfow1s03uli" path="res://Assets/COMPUTER.png" id="tex_computer"]
 
 [node name="GameScene" type="Node2D"]
 script = ExtResource("1_script")
@@ -29,7 +30,6 @@ color = Color(0.101961, 0.168627, 0.298039, 1)
 
 [node name="Camera2D" type="Camera2D" parent="."]
 position = Vector2(960, 540)
-zoom = Vector2(1.0, 1.0)
 limit_left = 0
 limit_top = 0
 limit_right = 1920
@@ -198,6 +198,15 @@ offset_right = 880.0
 offset_bottom = 110.0
 texture_normal = ExtResource("hud_btn_resistance")
 
+[node name="TraitsLabel" type="Label" parent="CanvasLayer/HUD/BottomPanel"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = -20.0
+offset_right = 400.0
+offset_bottom = 10.0
+theme_override_colors/font_color = Color(0, 1, 0, 1)
+text = "SPD: 1 | STL: 1 | RES: 1"
+
 [node name="NotificationLabel" type="Label" parent="CanvasLayer/HUD"]
 layout_mode = 1
 anchors_preset = 5
@@ -246,22 +255,13 @@ offset_right = -10.0
 offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_font_sizes/bold_italics_font_size = 13
+theme_override_font_sizes/italics_font_size = 13
+theme_override_font_sizes/mono_font_size = 13
 theme_override_font_sizes/normal_font_size = 13
 theme_override_font_sizes/bold_font_size = 13
-theme_override_font_sizes/italics_font_size = 13
-theme_override_font_sizes/bold_italics_font_size = 13
-theme_override_font_sizes/mono_font_size = 13
 bbcode_enabled = true
 scroll_following = true
-
-[node name="TraitsLabel" type="Label" parent="CanvasLayer/HUD/BottomPanel"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = -20.0
-offset_right = 400.0
-offset_bottom = 10.0
-theme_override_colors/font_color = Color(0, 1, 0, 1)
-text = "SPD: 1 | STL: 1 | RES: 1"
 
 [node name="EndScreen" type="Control" parent="CanvasLayer"]
 visible = false
@@ -295,10 +295,9 @@ offset_bottom = 50.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 64
+text = "GAME OVER"
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "GAME OVER"
-
 
 [node name="CRTMonitor" type="Control" parent="CanvasLayer"]
 visible = false
@@ -309,38 +308,46 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="ColorRect" type="ColorRect" parent="CanvasLayer/CRTMonitor"]
+[node name="ColorRect" type="TextureRect" parent="CanvasLayer/CRTMonitor"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -350.0
-offset_top = -250.0
-offset_right = 350.0
-offset_bottom = 250.0
+offset_left = -400.0
+offset_top = -400.0
+offset_right = 400.0
+offset_bottom = 400.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.0196078, 0, 0.0588235, 0.95)
+texture = ExtResource("tex_computer")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="ReferenceRect" type="ReferenceRect" parent="CanvasLayer/CRTMonitor/ColorRect"]
+[node name="ScreenOverlay" type="TextureRect" parent="CanvasLayer/CRTMonitor/ColorRect"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -250.0
+offset_right = 300.0
+offset_bottom = 150.0
 grow_horizontal = 2
 grow_vertical = 2
-border_color = Color(0.6, 0.2, 1, 1)
-border_width = 4.0
-editor_only = false
+texture = ExtResource("tex_comps")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Label" type="Label" parent="CanvasLayer/CRTMonitor/ColorRect"]
 layout_mode = 0
-offset_left = 30.0
-offset_top = 20.0
+offset_left = 130.0
+offset_top = 170.0
 offset_right = 670.0
-offset_bottom = 50.0
+offset_bottom = 200.0
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 theme_override_font_sizes/font_size = 20
 text = "VIRUS UPGRADE TERMINAL"
@@ -349,21 +356,21 @@ horizontal_alignment = 1
 [node name="CloseBtn" type="Button" parent="CanvasLayer/CRTMonitor/ColorRect"]
 layout_mode = 0
 offset_left = 650.0
-offset_top = 10.0
+offset_top = 160.0
 offset_right = 680.0
-offset_bottom = 40.0
+offset_bottom = 190.0
 theme_override_colors/font_color = Color(1, 0, 0, 1)
 text = "X"
 flat = true
 
 [node name="GridContainer" type="GridContainer" parent="CanvasLayer/CRTMonitor/ColorRect"]
 layout_mode = 0
-offset_left = 30.0
-offset_top = 70.0
+offset_left = 130.0
+offset_top = 220.0
 offset_right = 670.0
-offset_bottom = 450.0
+offset_bottom = 520.0
 theme_override_constants/h_separation = 30
-theme_override_constants/v_separation = 30
+theme_override_constants/v_separation = 20
 columns = 2
 
 [node name="VBoxTrans" type="VBoxContainer" parent="CanvasLayer/CRTMonitor/ColorRect/GridContainer"]
@@ -462,6 +469,9 @@ text = "> RANSOMWARE [20]"
 flat = true
 alignment = 0
 
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnSpeed" to="." method="_on_btn_speed_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnStealth" to="." method="_on_btn_stealth_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnResistance" to="." method="_on_btn_resistance_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/CloseBtn" to="CanvasLayer/CRTMonitor" method="hide"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxTrans/BtnEmail" to="." method="_on_email_phishing_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxTrans/BtnCloud" to="." method="_on_cloud_exploit_pressed"]
@@ -471,6 +481,3 @@ alignment = 0
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxResist/BtnAntiAV" to="." method="_on_anti_antivirus_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxPayload/BtnKeylogger" to="." method="_on_keylogger_pressed"]
 [connection signal="pressed" from="CanvasLayer/CRTMonitor/ColorRect/GridContainer/VBoxPayload/BtnRansomware" to="." method="_on_ransomware_pressed"]
-[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnSpeed" to="." method="_on_btn_speed_pressed"]
-[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnStealth" to="." method="_on_btn_stealth_pressed"]
-[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnResistance" to="." method="_on_btn_resistance_pressed"]
