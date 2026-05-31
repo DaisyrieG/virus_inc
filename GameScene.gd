@@ -530,8 +530,6 @@ func _update_map_visuals():
 			var spr = Sprite2D.new()
 			spr.centered = false
 			spr.position = Vector2.ZERO
-			# Render BEHIND the dot text but above the base map
-			spr.z_index = -1
 			if country_hover_images.has(country):
 				var tex = load(country_hover_images[country])
 				if tex:
