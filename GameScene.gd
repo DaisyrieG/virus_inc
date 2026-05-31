@@ -530,6 +530,8 @@ func _update_map_visuals():
 			var spr = Sprite2D.new()
 			spr.centered = false
 			spr.position = Vector2.ZERO
+			# Render BEHIND the dot text but above the base map
+			spr.z_index = -1
 			if country_hover_images.has(country):
 				var tex = load(country_hover_images[country])
 				if tex:
@@ -540,16 +542,20 @@ func _update_map_visuals():
 		
 		var spr = infection_sprites[country]
 		if country in infected_countries:
-			# RED tint — infected!
-			spr.modulate = Color(1.0, 0.1, 0.1, 0.85)
+			# RED tint — infected (semi-transparent so map still visible)
+			spr.modulate = Color(1.0, 0.15, 0.15, 0.70)
 			spr.visible = true
 		elif country in patched_countries:
-			# GREY/BLUE tint — patched by Bayesian AI
-			spr.modulate = Color(0.3, 0.5, 1.0, 0.7)
+			# BLUE/CYAN tint — secured by Bayesian AI
+			spr.modulate = Color(0.2, 0.5, 1.0, 0.55)
 			spr.visible = true
 		else:
-			# Normal — hide the overlay
+			# No infection — hide the overlay
 			spr.visible = false
+	
+	# Trigger the dot renderer to redraw on top
+	dot_renderer.queue_redraw()
+
 
 
 # ═════════════════════════════════════════════════════════════════
