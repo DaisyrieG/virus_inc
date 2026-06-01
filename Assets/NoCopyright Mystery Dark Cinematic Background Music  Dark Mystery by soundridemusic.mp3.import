@@ -1,0 +1,19 @@
+[remap]
+
+importer="mp3"
+type="AudioStreamMP3"
+uid="uid://je5sdoa4rq1j"
+path="res://.godot/imported/NoCopyright Mystery Dark Cinematic Background Music  Dark Mystery by soundridemusic.mp3-9205191b70840d536fa726dc27b38f1e.mp3str"
+
+[deps]
+
+source_file="res://Assets/NoCopyright Mystery Dark Cinematic Background Music  Dark Mystery by soundridemusic.mp3"
+dest_files=["res://.godot/imported/NoCopyright Mystery Dark Cinematic Background Music  Dark Mystery by soundridemusic.mp3-9205191b70840d536fa726dc27b38f1e.mp3str"]
+
+[params]
+
+loop=true
+loop_offset=0
+bpm=0
+beat_count=0
+bar_beats=4

@@ -751,6 +751,7 @@ func _end_game(won: bool):
 	else:
 		log_event("🛑 CYBERSECURITY AI CONTAINED THE THREAT 🛑", "green")
 
+
 	# Add a dynamic stats overlay to the end screen
 	var stats_panel = PanelContainer.new()
 	var style = StyleBoxFlat.new()
@@ -1033,6 +1034,7 @@ func _update_defense_panel():
 		status_label.text = "🟢 DORMANT [%d%%]" % det_pct
 		status_label.add_theme_color_override("font_color", Color.WHITE)
 	patch_count_label.text = str(total_patches)
+	
 
 func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:

@@ -22,6 +22,7 @@ extends Control
 var no_button_initial_pos: Vector2
 
 func _ready():
+    AudioManager.play_bgm(load("res://Assets/NoCopyright Mystery Dark Cinematic Background Music  Dark Mystery by soundridemusic.mp3"))
     screen1.show()
     screen2.hide()
     screen3.hide()

@@ -298,6 +298,7 @@ horizontal_alignment = 1
 vertical_alignment = 1
 
 [node name="CRTMonitor" type="Control" parent="CanvasLayer"]
+visible = false
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -314,29 +315,46 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0, 0, 0, 0.7)
 
+[node name="ComputerBG" type="TextureRect" parent="CanvasLayer/CRTMonitor"]
+layout_mode = 1
+anchors_preset = -1
+anchor_left = 0.464
+anchor_top = 0.383
+anchor_right = 0.464
+anchor_bottom = 0.385
+offset_left = -729.88
+offset_top = -366.64
+offset_right = 730.12
+offset_bottom = 623.2
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("tex_computer")
+expand_mode = 1
+stretch_mode = 5
+
 [node name="ScreenOverlay" type="ColorRect" parent="CanvasLayer/CRTMonitor"]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.338889
-anchor_top = 0.141975
-anchor_right = 0.665451
-anchor_bottom = 0.541049
-offset_left = 77.3333
-offset_top = 96.6667
-offset_right = -66.6658
-offset_bottom = 18.6668
+anchor_left = 0.467
+anchor_top = 0.403
+anchor_right = 0.467
+anchor_bottom = 0.403
+offset_left = -242.64
+offset_top = -190.24
+offset_right = 242.36
+offset_bottom = 153.76
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.01, 0, 0.04, 0.97)
+color = Color(0.02, 0, 0.05, 0.95)
 
 [node name="Label" type="Label" parent="CanvasLayer/CRTMonitor/ScreenOverlay"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 78.0
-offset_top = 33.0
-offset_right = -59.0
-offset_bottom = 72.0
+offset_left = 2.0
+offset_top = 7.0
+offset_right = 2.0
+offset_bottom = 46.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 theme_override_font_sizes/font_size = 28
@@ -348,10 +366,10 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -52.0
-offset_top = 25.0
-offset_right = -22.0
-offset_bottom = 67.0
+offset_left = -40.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = 40.0
 grow_horizontal = 0
 theme_override_colors/font_color = Color(1, 0, 0, 1)
 theme_override_font_sizes/font_size = 24
@@ -360,15 +378,15 @@ flat = true
 
 [node name="GridContainer" type="GridContainer" parent="CanvasLayer/CRTMonitor/ScreenOverlay"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
+anchors_preset = -1
+anchor_left = 0.485
 anchor_top = 0.5
-anchor_right = 0.5
+anchor_right = 0.485
 anchor_bottom = 0.5
-offset_left = -200.5
-offset_top = -110.5
-offset_right = 227.5
-offset_bottom = 159.5
+offset_left = -203.225
+offset_top = -110.0
+offset_right = 224.775
+offset_bottom = 155.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/h_separation = 30
@@ -470,23 +488,6 @@ theme_override_colors/font_color = Color(0, 1, 0, 1)
 text = "> RANSOMWARE [20]"
 flat = true
 alignment = 0
-
-[node name="ComputerBG" type="TextureRect" parent="CanvasLayer/CRTMonitor"]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -950.0
-offset_top = -533.0
-offset_right = 970.0
-offset_bottom = 547.0
-grow_horizontal = 2
-grow_vertical = 2
-scale = Vector2(0.75, 0.75)
-pivot_offset = Vector2(960, 540)
-texture = ExtResource("tex_computer")
 
 [connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnSpeed" to="." method="_on_btn_speed_pressed"]
 [connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnStealth" to="." method="_on_btn_stealth_pressed"]
