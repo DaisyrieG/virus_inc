@@ -174,14 +174,19 @@ func _align_crt_monitor():
 		bg.offset_bottom = 400
 		
 		# Align the screen overlay precisely to fit the CRT monitor asset's black screen
-		overlay.anchor_left = 0.0
-		overlay.anchor_right = 1.0
-		overlay.anchor_top = 0.0
-		overlay.anchor_bottom = 1.0
-		overlay.offset_left = 240
-		overlay.offset_top = 60
-		overlay.offset_right = -210
-		overlay.offset_bottom = -390
+		# Assuming overlay is a sibling of ComputerBG (child of CRTMonitor)
+		overlay.anchor_left = 0.5
+		overlay.anchor_right = 0.5
+		overlay.anchor_top = 0.5
+		overlay.anchor_bottom = 0.5
+		# ComputerBG left is -600, plus 240 inset = -360
+		overlay.offset_left = -360
+		# ComputerBG top is -400, plus 60 inset = -340
+		overlay.offset_top = -340
+		# ComputerBG right is 600, minus 210 inset = 390
+		overlay.offset_right = 390
+		# ComputerBG bottom is 400, minus 390 inset = 10
+		overlay.offset_bottom = 10
 		
 		# Ensure the GridContainer fits inside perfectly
 		var grid = overlay.get_node_or_null("GridContainer")
@@ -1040,3 +1045,12 @@ func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:
 		var time = Time.get_time_string_from_system()
 		defense_log.append_text("[color=gray][%s][/color] [color=%s]%s[/color]\n" % [time, color, msg])
+
+func _on_email_phishing_pressed(): buy_upgrade("email_phishing")
+func _on_cloud_exploit_pressed(): buy_upgrade("cloud_exploit")
+func _on_code_obfuscation_pressed(): buy_upgrade("code_obfuscation")
+func _on_fileless_malware_pressed(): buy_upgrade("fileless_malware")
+func _on_registry_persist_pressed(): buy_upgrade("registry_persist")
+func _on_anti_antivirus_pressed(): buy_upgrade("anti_antivirus")
+func _on_keylogger_pressed(): buy_upgrade("keylogger")
+func _on_ransomware_pressed(): buy_upgrade("ransomware")
