@@ -2,25 +2,33 @@ class_name BayesianDefense
 extends RefCounted
 
 # ═══════════════════════════════════════════════════════════════════
-# BAYESIAN DEFENSE AI  
-# Uses Bayes' Theorem to update suspicion per country across turns.
-# Suspicion ACCUMULATES — after enough turns of infection signal,
-# the AI becomes confident enough to deploy a patch.
+# BAYESIAN DEFENSE AI - IMPROVED
+# Uses Bayes' Theorem with ADAPTIVE STRATEGY to defend the network.
 # ═══════════════════════════════════════════════════════════════════
 
-# How confident the AI needs to be before it patches a country
-const PATCH_THRESHOLD:          float = 0.85
+# Base threshold — adjusted dynamically based on threat level
+const BASE_PATCH_THRESHOLD:     float = 0.80
 # Probability an infected country emits a detectable signal
-const P_SIGNAL_GIVEN_INFECTED:  float = 0.70
+const P_SIGNAL_GIVEN_INFECTED:  float = 0.75
 # Probability a clean country emits a false signal (noise)
-const P_SIGNAL_GIVEN_CLEAN:     float = 0.25
+const P_SIGNAL_GIVEN_CLEAN:     float = 0.20
 # How quickly suspicion decays on clean countries per turn
-const SUSPICION_DECAY:          float = 0.06
+const SUSPICION_DECAY:          float = 0.05
+
+# ─ IMPROVEMENT TRACKING ─
+# Track infection age and patch failures for smarter decisions
+var infection_age: Dictionary = {}        # How many turns each node has been infected
+var patch_failures: Dictionary = {}       # How many times a patch failed per node
+var last_signal_strength: Dictionary = {} # Remember signal trends
 
 # ───────────────────────────────────────────────────────────────────
 # process_turn — call this once per game turn
-# Returns a dict: { "patched": [...], "resisted": [...], "scanning": [...] }
-# "scanning" contains countries with suspicion >= 40% (visible to player)
+# IMPROVEMENTS:
+# 1. Tracks infection age → older infections are more obvious
+# 2. Remembers patch failures → knows which viruses are resistant
+# 3. Adaptive threshold → patches more aggressively under threat
+# 4. Risk scoring → prioritizes high-impact nodes
+# Returns: { "patched": [...], "resisted": [...], "scanning": [...] }
 # ───────────────────────────────────────────────────────────────────
 func process_turn(
 		world_countries: Array,
@@ -39,28 +47,40 @@ func process_turn(
 	var results: Dictionary = {
 		"patched":  [],
 		"resisted": [],
-		"scanning": []   # countries AI is actively tracking
+		"scanning": []
 	}
+
+	# ── UPDATE INFECTION AGE ────────────────────────────────────
+	for country in infected_countries:
+		if country not in infection_age:
+			infection_age[country] = 0
+		infection_age[country] += 1
+
+	# ── REMOVE AGE FROM CURED NODES ─────────────────────────────
+	for country in infection_age.keys():
+		if country not in infected_countries:
+			infection_age.erase(country)
 
 	var candidates: Array = []
 
 	for country in world_countries:
-		# ── Patched countries lose suspicion slowly over time ──────
+		# ── Patched countries lose suspicion slowly ──────────────
 		if country in patched_countries:
-			country_detection[country] = maxf(0.01, country_detection.get(country, 0.01) - 0.02)
+			country_detection[country] = maxf(0.01, country_detection.get(country, 0.01) - 0.03)
 			continue
 
-		# ── OBSERVE: how strong is the infection signal? ───────────
-		var obs = _observe_signal(country, infected_countries, virus_stealth, stealth_code_obf, stealth_fileless)
+		# ── OBSERVE: signal strength (improved!) ─────────────────
+		var obs = _observe_signal_advanced(
+			country, infected_countries, 
+			virus_stealth, stealth_code_obf, stealth_fileless
+		)
 
-		# ── BAYES UPDATE: accumulate suspicion across turns ────────
-		# prior  = suspicion from LAST turn (memory)
-		# posterior = updated suspicion after observing this turn
-		var prior     = country_detection.get(country, 0.05)
-		var p_s_i     = P_SIGNAL_GIVEN_INFECTED * obs
-		var p_s_ni    = P_SIGNAL_GIVEN_CLEAN    * obs
+		# ── BAYES UPDATE: with confidence boosting ──────────────
+		var prior = country_detection.get(country, 0.05)
+		var p_s_i = P_SIGNAL_GIVEN_INFECTED * obs
+		var p_s_ni = P_SIGNAL_GIVEN_CLEAN * obs
 		var numerator = p_s_i * prior
-		var evidence  = numerator + p_s_ni * (1.0 - prior)
+		var evidence = numerator + p_s_ni * (1.0 - prior)
 		var posterior: float
 
 		if evidence > 0.001:
@@ -68,61 +88,99 @@ func process_turn(
 		else:
 			posterior = prior
 
-		# Clamp to valid probability range
 		posterior = clampf(posterior, 0.01, 0.99)
 
-		# Clean countries naturally lose suspicion each turn
+		# ── INFECTION AGE BOOST ─────────────────────────────────
+		# The longer a node stays infected, the more obvious it becomes
+		if country in infected_countries:
+			var age_boost = clampf(infection_age.get(country, 0) * 0.08, 0.0, 0.35)
+			posterior = minf(0.99, posterior + age_boost)
+
+		# ── Clean countries lose suspicion ──────────────────────
 		if country not in infected_countries:
 			posterior = maxf(0.01, posterior - SUSPICION_DECAY)
 
-		# Save — this becomes the prior NEXT turn (the memory effect)
 		country_detection[country] = posterior
+		last_signal_strength[country] = obs
 
-		# Track which countries are actively being scanned
+		# Track scanning activity
 		if posterior >= 0.40 and country in infected_countries:
 			results["scanning"].append({
 				"country": country,
 				"probability": posterior
 			})
 
-		# Candidate for patching if above threshold
-		if posterior >= PATCH_THRESHOLD and country in infected_countries:
-			candidates.append({ "country": country, "posterior": posterior })
+		# ADAPTIVE THRESHOLD: Patch if high confidence OR high threat
+		var adaptive_threshold = _calculate_adaptive_threshold(
+			infected_countries.size(),
+			world_countries.size(),
+			country
+		)
 
-	# Sort by most suspicious first
-	candidates.sort_custom(func(a, b): return a["posterior"] > b["posterior"])
+		if posterior >= adaptive_threshold and country in infected_countries:
+			var risk_score = _calculate_risk_score(country, infected_countries, world_countries)
+			candidates.append({
+				"country": country,
+				"posterior": posterior,
+				"risk_score": risk_score
+			})
 
-	# ── PATCH the top N most suspicious countries ──────────────────
+	# ── SMART PRIORITIZATION ────────────────────────────────────
+	# Sort by risk first, then confidence (to catch spreading threats early)
+	candidates.sort_custom(func(a, b): 
+		if a["risk_score"] != b["risk_score"]:
+			return a["risk_score"] > b["risk_score"]
+		return a["posterior"] > b["posterior"]
+	)
+
+	# ── DYNAMIC PATCHING ────────────────────────────────────────
+	# Patch more aggressively when infection is spreading
+	var patches_to_deploy = max_patches
+	if infected_countries.size() > world_countries.size() * 0.4:
+		patches_to_deploy = int(max_patches * 1.5)  # 50% more patches when critical
+	if infected_countries.size() > world_countries.size() * 0.6:
+		patches_to_deploy = int(max_patches * 2.0)  # Double patches when dire
+
 	var patches_done = 0
 	for c in candidates:
-		if patches_done >= max_patches:
+		if patches_done >= patches_to_deploy:
 			break
 
-		var target       = c["country"]
-		var confidence   = c["posterior"]
+		var target = c["country"]
+		var confidence = c["posterior"]
 
-		# Resistance check — virus might survive the patch
-		var resist_chance = clampf(virus_resistance * 0.06, 0.0, 0.55)
-		if resist_registry:  resist_chance += 0.15
-		if resist_antivirus: resist_chance += 0.25
+		# ── IMPROVED RESISTANCE CALCULATION ─────────────────────
+		# Account for patch history - if many patches fail on this node,
+		# the virus is clearly resistant. Skip it until virus evolves.
+		var failures = patch_failures.get(target, 0)
+		var resist_chance = clampf(virus_resistance * 0.08, 0.0, 0.75)
+		
+		# Each previous failure increases this node's resistance profile
+		resist_chance += failures * 0.10
+		
+		if resist_registry:  resist_chance += 0.12
+		if resist_antivirus: resist_chance += 0.18
 
 		if randf() < resist_chance:
 			results["resisted"].append(target)
-			# Reset posterior: AI has to rebuild confidence
-			country_detection[target] = 0.25
+			# Track this failure
+			patch_failures[target] = patch_failures.get(target, 0) + 1
+			# Increase suspicion when patch fails (more confidence virus is there)
+			country_detection[target] = minf(0.90, country_detection[target] + 0.15)
 		else:
 			results["patched"].append(target)
-			# Reset posterior: country is now clean
 			country_detection[target] = 0.05
+			patch_failures.erase(target)  # Reset on success
 			patches_done += 1
 
 	return results
 
 # ───────────────────────────────────────────────────────────────────
-# _observe_signal — how detectable is this country this turn?
-# Returns a value 0.0 (completely silent) to 1.0 (obvious infection)
+# IMPROVED SIGNAL DETECTION
+# The longer a node is infected, the stronger its signal.
+# Returns 0.0 (silent) to 1.0 (obvious infection)
 # ───────────────────────────────────────────────────────────────────
-func _observe_signal(
+func _observe_signal_advanced(
 		country: String,
 		infected_countries: Array,
 		virus_stealth: float,
@@ -130,14 +188,81 @@ func _observe_signal(
 		stealth_fileless: bool
 	) -> float:
 
-	# Stealth stat reduces the base signal (max 65% reduction)
-	var stealth_mod = 1.0 - clampf(virus_stealth * 0.06, 0.0, 0.65)
-	if stealth_code_obf: stealth_mod *= 0.65   # Code obfuscation reduces signal further
-	if stealth_fileless:  stealth_mod *= 0.45  # Fileless malware almost silences the virus
+	# Stealth reduces signal strength
+	var stealth_mod = 1.0 - clampf(virus_stealth * 0.065, 0.0, 0.70)
+	if stealth_code_obf: stealth_mod *= 0.60
+	if stealth_fileless:  stealth_mod *= 0.40
 
 	if country in infected_countries:
-		# Infected country: strong signal, reduced by stealth
-		return randf_range(0.55, 1.0) * stealth_mod
+		# Base signal for infection
+		var base_signal = randf_range(0.60, 1.0)
+		
+		# Age-based signal amplification
+		# Older infections leave more traces (logs, artifacts, etc)
+		var age = infection_age.get(country, 0)
+		var age_multiplier = 1.0 + (age * 0.05)  # +5% per turn infected
+		age_multiplier = clampf(age_multiplier, 1.0, 1.40)  # Cap at 40% boost
+		
+		var signal = base_signal * age_multiplier * stealth_mod
+		return clampf(signal, 0.3, 1.0)
 	else:
-		# Clean country: low noise only
-		return randf_range(0.0, 0.08)
+		# Clean country: just noise
+		return randf_range(0.0, 0.06)
+
+
+# ───────────────────────────────────────────────────────────────────
+# ADAPTIVE THRESHOLD — Decision making under pressure
+# ───────────────────────────────────────────────────────────────────
+func _calculate_adaptive_threshold(
+		infected_count: int,
+		total_countries: int,
+		country: String
+	) -> float:
+
+	var infection_rate = float(infected_count) / float(total_countries)
+	var base = BASE_PATCH_THRESHOLD
+	
+	# As infection spreads, lower the threshold (get desperate)
+	if infection_rate > 0.7:
+		base = 0.60  # Critical: patch suspected nodes
+	elif infection_rate > 0.5:
+		base = 0.65
+	elif infection_rate > 0.3:
+		base = 0.72
+	
+	# If this node has failed patches before, be MORE confident before trying again
+	var failures = patch_failures.get(country, 0)
+	if failures > 0:
+		base += failures * 0.05  # Require 5% more confidence per failure
+	
+	return clampf(base, 0.55, 0.95)
+
+
+# ───────────────────────────────────────────────────────────────────
+# RISK SCORING — Which infections are most dangerous?
+# Consider: how fast is this spreading? Is it a network hub?
+# ───────────────────────────────────────────────────────────────────
+func _calculate_risk_score(
+		country: String,
+		infected_countries: Array,
+		world_countries: Array
+	) -> float:
+
+	var risk = 0.0
+	
+	# Factor 1: Infection age (spreading longer = higher risk)
+	var age = infection_age.get(country, 0)
+	risk += age * 2.0
+	
+	# Factor 2: Patch failure history (resistant strains are dangerous)
+	var failures = patch_failures.get(country, 0)
+	risk += failures * 5.0
+	
+	# Factor 3: Network position (hub nodes are high-value)
+	# (Approximated by whether many neighbors are infected)
+	# This would be improved by actual graph connectivity data
+	# For now, we use infection density as proxy
+	var infection_density = float(infected_countries.size()) / float(world_countries.size())
+	risk += infection_density * 3.0
+	
+	return risk
