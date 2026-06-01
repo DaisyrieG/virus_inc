@@ -946,7 +946,7 @@ func _setup_dynamic_ui():
 	dp.anchor_right = 1.0
 	dp.anchor_top = 0.0
 	dp.anchor_bottom = 0.0
-	dp.offset_left = -340
+	dp.offset_left = -380
 	dp.offset_top = 20
 	dp.offset_right = -20
 	dp.offset_bottom = 340
@@ -964,7 +964,7 @@ func _setup_dynamic_ui():
 	sep1.color = Color(0.0, 0.8, 0.4, 0.5)
 	sep1.offset_left = 15
 	sep1.offset_top = 40
-	sep1.offset_right = 305
+	sep1.offset_right = 345
 	sep1.offset_bottom = 42
 	dp.add_child(sep1)
 	
@@ -1000,7 +1000,7 @@ func _setup_dynamic_ui():
 	sep2.color = Color(0.0, 0.8, 0.4, 0.5)
 	sep2.offset_left = 15
 	sep2.offset_top = 115
-	sep2.offset_right = 305
+	sep2.offset_right = 345
 	sep2.offset_bottom = 117
 	dp.add_child(sep2)
 	
@@ -1009,7 +1009,7 @@ func _setup_dynamic_ui():
 	defense_log.scroll_following = true
 	defense_log.offset_left = 15
 	defense_log.offset_top = 125
-	defense_log.offset_right = 305
+	defense_log.offset_right = 345
 	defense_log.offset_bottom = 310
 	dp.add_child(defense_log)
 	
