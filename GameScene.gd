@@ -160,7 +160,7 @@ func _ready():
 func _align_crt_monitor():
 	if not crt_monitor: return
 	var bg = crt_monitor.get_node_or_null("ComputerBG")
-	var overlay = crt_monitor.get_node_or_null("ComputerBG/ScreenOverlay")
+	var overlay = crt_monitor.get_node_or_null("ScreenOverlay")
 	if bg and overlay:
 		# Lock the background to exactly 1200x800 and center it programmatically
 		bg.custom_minimum_size = Vector2(1200, 800)
@@ -682,7 +682,7 @@ func _refresh_terminal_buttons():
 		var bought = upg["bought"]
 		var afford = resources >= cost
 
-		var base  = "CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay/GridContainer"
+		var base  = "CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer"
 		var paths = [
 			base + "/VBoxTrans/"   + btn_name,
 			base + "/VBoxStealth/" + btn_name,
