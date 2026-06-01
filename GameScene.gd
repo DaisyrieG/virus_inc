@@ -309,10 +309,8 @@ func _dijkstra_spread():
 	)
 	var distances = result["distances"]
 	var previous  = result["previous"]
-	# BUG FIX: Pass patched_countries so Dijkstra excludes them from spread targets.
-	# Without this, patched countries appear as valid spread targets and bypass the
-	# patched check, causing double-logic conflicts and incorrect spread routing.
-	var targets   = Dijkstra.get_spread_targets(distances, infected_countries, patched_countries)
+	# Allow targeting patched countries so the reinfection logic can execute
+	var targets   = Dijkstra.get_spread_targets(distances, infected_countries)
 
 	if targets.size() == 0:
 		return
