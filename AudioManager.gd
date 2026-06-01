@@ -1,11 +1,5 @@
 extends Node
 
-# ═════════════════════════════════════════════════════════════════
-#                        AUDIO MANAGER
-# ═════════════════════════════════════════════════════════════════
-# Use this class to easily manage and play background music and SFX.
-# You can add this as an Autoload (Global) in Project Settings -> Autoload,
-# or simply attach it to your main GameScene.
 
 @onready var bgm_player: AudioStreamPlayer = AudioStreamPlayer.new()
 @onready var sfx_player: AudioStreamPlayer = AudioStreamPlayer.new()
