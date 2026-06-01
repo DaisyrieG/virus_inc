@@ -334,13 +334,15 @@ texture = ExtResource("tex_computer")
 
 [node name="ScreenOverlay" type="ColorRect" parent="CanvasLayer/CRTMonitor/ComputerBG"]
 layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 469.0
-offset_top = 121.0
-offset_right = -446.0
-offset_bottom = -385.0
+anchors_preset = -1
+anchor_left = 0.244271
+anchor_top = 0.112037
+anchor_right = 0.767708
+anchor_bottom = 0.643519
+offset_left = 0.0
+offset_top = 0.0
+offset_right = 0.0
+offset_bottom = 0.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.01, 0, 0.04, 0.97)
