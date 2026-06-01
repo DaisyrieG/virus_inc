@@ -317,15 +317,15 @@ color = Color(0, 0, 0, 0.7)
 
 [node name="ComputerBG" type="TextureRect" parent="CanvasLayer/CRTMonitor"]
 layout_mode = 1
-anchors_preset = -1
-anchor_left = 0.508
-anchor_top = 0.385
-anchor_right = 0.514
-anchor_bottom = 0.387
-offset_left = -1009.36
-offset_top = -348.8
-offset_right = 921.12
-offset_bottom = 648.04
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -600.0
+offset_top = -400.0
+offset_right = 600.0
+offset_bottom = 400.0
 grow_horizontal = 2
 grow_vertical = 2
 texture = ExtResource("tex_computer")
@@ -334,13 +334,14 @@ stretch_mode = 5
 
 [node name="ScreenOverlay" type="ColorRect" parent="CanvasLayer/CRTMonitor/ComputerBG"]
 layout_mode = 1
-anchors_preset = 15
+anchor_left = 0.0
+anchor_top = 0.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 693.0
-offset_top = 119.0
-offset_right = -667.0
-offset_bottom = -449.0
+offset_left = 240.0
+offset_top = 60.0
+offset_right = -210.0
+offset_bottom = -390.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.01, 0, 0.04, 0.97)
@@ -376,15 +377,15 @@ flat = true
 
 [node name="GridContainer" type="GridContainer" parent="CanvasLayer/CRTMonitor/ComputerBG/ScreenOverlay"]
 layout_mode = 1
-anchors_preset = -1
+anchors_preset = 8
 anchor_left = 0.5
-anchor_top = 0.516
+anchor_top = 0.5
 anchor_right = 0.5
-anchor_bottom = 0.516
-offset_left = -210.0
-offset_top = -129.176
-offset_right = 218.0
-offset_bottom = 128.824
+anchor_bottom = 0.5
+offset_left = -350.0
+offset_top = -120.0
+offset_right = 350.0
+offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/h_separation = 30
