@@ -158,30 +158,7 @@ func _ready():
 #                     CRT MONITOR ALIGNMENT
 # ═════════════════════════════════════════════════════════════════
 func _align_crt_monitor():
-	if not crt_monitor: return
-	var bg = crt_monitor.get_node_or_null("ComputerBG")
-	var overlay = crt_monitor.get_node_or_null("ScreenOverlay")
-	if bg and overlay:
-		# Use absolute pixel positioning for foolproof alignment
-		# The COMPUTER.png asset is 1920x1080 natively. Let's make it full screen.
-		bg.custom_minimum_size = Vector2(1920, 1080)
-		bg.size = Vector2(1920, 1080)
-		bg.position = Vector2(0, 0)
-		
-		# The black screen area inside COMPUTER.png is exactly at ~ X:670, Y:143
-		# and is about 609x445 in size. We use a slightly padded box to fit perfectly.
-		overlay.size = Vector2(600, 440)
-		overlay.position = Vector2(675, 145)
-		
-		# Force ScreenOverlay to draw ON TOP of ComputerBG and receive clicks
-		crt_monitor.move_child(overlay, crt_monitor.get_child_count() - 1)
-		
-		# Ensure the GridContainer centers dynamically regardless of text width
-		var grid = overlay.get_node_or_null("GridContainer")
-		if grid:
-			grid.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-			# Add a little vertical offset so it doesn't overlap the title
-			grid.position.y += 20
+	pass
 
 
 
