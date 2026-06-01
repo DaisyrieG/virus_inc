@@ -131,6 +131,7 @@ func _ready():
 
 	_ga_init_population()
 	_setup_dynamic_ui()
+	_align_crt_monitor()
 
 	if end_screen:
 		end_screen.hide()
@@ -151,6 +152,49 @@ func _ready():
 
 	log_event("Click a country to start the infection...", "yellow")
 	_update_hud()
+
+
+# ═════════════════════════════════════════════════════════════════
+#                     CRT MONITOR ALIGNMENT
+# ═════════════════════════════════════════════════════════════════
+func _align_crt_monitor():
+	if not crt_monitor: return
+	var bg = crt_monitor.get_node_or_null("ComputerBG")
+	var overlay = crt_monitor.get_node_or_null("ComputerBG/ScreenOverlay")
+	if bg and overlay:
+		# Lock the background to exactly 1200x800 and center it programmatically
+		bg.custom_minimum_size = Vector2(1200, 800)
+		bg.anchor_left = 0.5
+		bg.anchor_right = 0.5
+		bg.anchor_top = 0.5
+		bg.anchor_bottom = 0.5
+		bg.offset_left = -600
+		bg.offset_right = 600
+		bg.offset_top = -400
+		bg.offset_bottom = 400
+		
+		# Align the screen overlay precisely to fit the CRT monitor asset's black screen
+		overlay.anchor_left = 0.0
+		overlay.anchor_right = 1.0
+		overlay.anchor_top = 0.0
+		overlay.anchor_bottom = 1.0
+		overlay.offset_left = 240
+		overlay.offset_top = 60
+		overlay.offset_right = -210
+		overlay.offset_bottom = -390
+		
+		# Ensure the GridContainer fits inside perfectly
+		var grid = overlay.get_node_or_null("GridContainer")
+		if grid:
+			grid.anchor_left = 0.5
+			grid.anchor_right = 0.5
+			grid.anchor_top = 0.5
+			grid.anchor_bottom = 0.5
+			grid.offset_left = -350
+			grid.offset_right = 350
+			grid.offset_top = -120
+			grid.offset_bottom = 180
+
 
 
 # ═════════════════════════════════════════════════════════════════

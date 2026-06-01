@@ -1,4 +1,4 @@
-[gd_scene load_steps=16 format=3 uid="uid://cmywriryfarbj"]
+[gd_scene load_steps=19 format=3 uid="uid://cmywriryfarbj"]
 
 [ext_resource type="Script" path="res://MainMenu.gd" id="1_script"]
 [ext_resource type="Texture2D" uid="uid://cqh3k3454xuxx" path="res://Assets/BACKGROUND_1.png" id="2_bg1"]
@@ -10,6 +10,9 @@
 [ext_resource type="Texture2D" uid="uid://dnj4bafx6pjmg" path="res://Assets/NEXT.png" id="8_next"]
 [ext_resource type="Texture2D" uid="uid://d3ir76kyy5anv" path="res://Assets/BACKGROUND_4.png" id="9_bg4"]
 [ext_resource type="Texture2D" uid="uid://thosvm616jg" path="res://Assets/BUTTON FOR ENTER.png" id="10_enter"]
+[ext_resource type="Texture2D" uid="uid://g1g2na5vryd6" path="res://Assets/[ITA] Game Dev Assets_ INSTRUCTIONS.png" id="11_instr1"]
+[ext_resource type="Texture2D" uid="uid://b5srwev62va80" path="res://Assets/[ITA] Game Dev Assets_ INSTRUCTIONS (1).png" id="12_instr2"]
+[ext_resource type="Texture2D" uid="uid://byf8ncyo73xb0" path="res://Assets/[ITA] Game Dev Assets_ INSTRUCTIONS (2).png" id="13_instr3"]
 
 [sub_resource type="AtlasTexture" id="AtlasTexture_start"]
 atlas = ExtResource("3_start")
@@ -168,15 +171,15 @@ expand_mode = 1
 
 [node name="EnterPrompt" type="TextureRect" parent="Screen4"]
 layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -600.0
-offset_top = -50.0
-offset_right = 600.0
-offset_bottom = 50.0
+anchors_preset = -1
+anchor_left = 0.487
+anchor_top = 0.502
+anchor_right = 0.487
+anchor_bottom = 0.502
+offset_left = -532.04
+offset_top = -50.16
+offset_right = 530.96
+offset_bottom = 49.84
 grow_horizontal = 2
 grow_vertical = 2
 texture = SubResource("AtlasTexture_enter")
@@ -187,10 +190,10 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 52.0
-offset_top = 20.0
-offset_right = -68.0
-offset_bottom = -14.0
+offset_left = 50.0
+offset_top = 18.0
+offset_right = -44.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.447059, 0.0392157, 0.0392157, 1)
@@ -200,9 +203,9 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 107.0
+offset_left = 14.0
 offset_top = 13.0
-offset_right = -148.0
+offset_right = -30.0
 offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
@@ -210,3 +213,111 @@ theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 48
 alignment = 1
 flat = true
+
+[node name="InstrScreen1" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="InstrScreen1"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("11_instr1")
+expand_mode = 1
+
+[node name="NextBtn" type="TextureButton" parent="InstrScreen1"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -120.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+texture_normal = SubResource("AtlasTexture_next")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="InstrScreen2" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="InstrScreen2"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("12_instr2")
+expand_mode = 1
+
+[node name="NextBtn" type="TextureButton" parent="InstrScreen2"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -120.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+texture_normal = SubResource("AtlasTexture_next")
+ignore_texture_size = true
+stretch_mode = 0
+
+[node name="InstrScreen3" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Background" type="TextureRect" parent="InstrScreen3"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("13_instr3")
+expand_mode = 1
+
+[node name="NextBtn" type="TextureButton" parent="InstrScreen3"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -300.0
+offset_top = -120.0
+offset_right = -40.0
+offset_bottom = -30.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+texture_normal = SubResource("AtlasTexture_next")
+ignore_texture_size = true
+stretch_mode = 0

@@ -3,12 +3,18 @@ extends Control
 @onready var screen1 = $Screen1
 @onready var screen2 = $Screen2
 @onready var screen3 = $Screen3
+@onready var instr1 = $InstrScreen1
+@onready var instr2 = $InstrScreen2
+@onready var instr3 = $InstrScreen3
 @onready var screen4 = $Screen4
 
 @onready var start_button = $Screen1/StartButton
 @onready var yes_button = $Screen2/YesButton
 @onready var no_button = $Screen2/NoButton
 @onready var next_button = $Screen3/NextButton
+@onready var instr1_next = $InstrScreen1/NextBtn
+@onready var instr2_next = $InstrScreen2/NextBtn
+@onready var instr3_next = $InstrScreen3/NextBtn
 @onready var text_cover = $Screen4/EnterPrompt/TextCover
 @onready var virus_name_input = $Screen4/EnterPrompt/VirusNameInput
 
@@ -16,10 +22,12 @@ extends Control
 var no_button_initial_pos: Vector2
 
 func _ready():
-    # Show only the first screen initially
     screen1.show()
     screen2.hide()
     screen3.hide()
+    instr1.hide()
+    instr2.hide()
+    instr3.hide()
     screen4.hide()
     text_cover.hide()
     
@@ -29,6 +37,9 @@ func _ready():
     no_button.mouse_entered.connect(_on_no_mouse_entered)
     no_button.pressed.connect(_on_no_pressed)
     next_button.pressed.connect(_on_next_pressed)
+    instr1_next.pressed.connect(_on_instr1_next)
+    instr2_next.pressed.connect(_on_instr2_next)
+    instr3_next.pressed.connect(_on_instr3_next)
     virus_name_input.text_changed.connect(_on_virus_name_changed)
     virus_name_input.text_submitted.connect(_on_virus_name_submitted)
     
@@ -76,6 +87,18 @@ func _on_no_pressed():
 
 func _on_next_pressed():
     screen3.hide()
+    instr1.show()
+
+func _on_instr1_next():
+    instr1.hide()
+    instr2.show()
+
+func _on_instr2_next():
+    instr2.hide()
+    instr3.show()
+
+func _on_instr3_next():
+    instr3.hide()
     screen4.show()
     virus_name_input.grab_focus()
 
