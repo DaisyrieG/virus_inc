@@ -880,12 +880,14 @@ func _setup_dynamic_ui():
 	dp.offset_left  = -330; dp.offset_right = -10
 	dp.offset_top   = 10;   dp.offset_bottom = 300
 	dp.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-	dp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	dp.stretch_mode = TextureRect.STRETCH_SCALE
 
 	var main_mask         = ColorRect.new()
 	main_mask.color       = Color(0.01, 0.08, 0.04, 1.0)
 	main_mask.offset_left = 10;  main_mask.offset_top    = 45
 	main_mask.offset_right= 310; main_mask.offset_bottom = 285
+	main_mask.show_behind_parent = true
+	main_mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dp.add_child(main_mask)
 
 	alert_badge             = TextureRect.new()
