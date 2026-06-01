@@ -333,21 +333,22 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -305.0
-offset_top = -245.0
-offset_right = 305.0
-offset_bottom = 200.0
+offset_left = -276.0
+offset_top = -394.0
+offset_right = 332.0
+offset_bottom = 51.0
 grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.02, 0, 0.05, 0.95)
+
 [node name="Label" type="Label" parent="CanvasLayer/CRTMonitor/ScreenOverlay"]
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 2.0
-offset_top = 7.0
-offset_right = 2.0
-offset_bottom = 46.0
+offset_left = -22.0
+offset_top = 17.0
+offset_right = -22.0
+offset_bottom = 56.0
 grow_horizontal = 2
 theme_override_colors/font_color = Color(0, 1, 0, 1)
 theme_override_font_sizes/font_size = 28
@@ -372,14 +373,14 @@ flat = true
 [node name="GridContainer" type="GridContainer" parent="CanvasLayer/CRTMonitor/ScreenOverlay"]
 layout_mode = 1
 anchors_preset = -1
-anchor_left = 0.485
-anchor_top = 0.5
-anchor_right = 0.485
-anchor_bottom = 0.5
-offset_left = -197.225
-offset_top = -104.0
-offset_right = 230.775
-offset_bottom = 161.0
+anchor_left = 0.184
+anchor_top = 0.582
+anchor_right = 0.823
+anchor_bottom = 0.582
+offset_left = 5.75999
+offset_top = -128.99
+offset_right = 43.97
+offset_bottom = 129.01
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/h_separation = 30
@@ -481,4 +482,17 @@ theme_override_colors/font_color = Color(0, 1, 0, 1)
 text = "> RANSOMWARE [20]"
 flat = true
 alignment = 0
+
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnSpeed" to="." method="_on_btn_speed_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnStealth" to="." method="_on_btn_stealth_pressed"]
+[connection signal="pressed" from="CanvasLayer/HUD/BottomPanel/BtnResistance" to="." method="_on_btn_resistance_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/CloseBtn" to="CanvasLayer/CRTMonitor" method="hide"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxTrans/BtnEmail" to="." method="_on_email_phishing_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxTrans/BtnCloud" to="." method="_on_cloud_exploit_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxStealth/BtnObfuscation" to="." method="_on_code_obfuscation_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxStealth/BtnFileless" to="." method="_on_fileless_malware_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxResist/BtnRegistry" to="." method="_on_registry_persist_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxResist/BtnAntiAV" to="." method="_on_anti_antivirus_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxPayload/BtnKeylogger" to="." method="_on_keylogger_pressed"]
+[connection signal="pressed" from="CanvasLayer/CRTMonitor/ScreenOverlay/GridContainer/VBoxPayload/BtnRansomware" to="." method="_on_ransomware_pressed"]
 

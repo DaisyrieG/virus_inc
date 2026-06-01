@@ -661,7 +661,7 @@ func _refresh_terminal_buttons():
 					btn.text = label + " [OWNED]"
 					btn.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 				elif not afford:
-					btn.text = (label + " [%d] (need %d more)") % [cost, cost - resources]
+					btn.text = "%s [%d] (need %d)" % [label, cost, cost - resources]
 					btn.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
 				else:
 					btn.text = label + " [%d]" % cost
@@ -1005,4 +1005,3 @@ func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:
 		var time = Time.get_time_string_from_system()
 		defense_log.append_text("[color=gray][%s][/color] [color=%s]%s[/color]\n" % [time, color, msg])
-
