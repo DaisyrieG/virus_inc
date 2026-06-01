@@ -841,6 +841,7 @@ func _on_ransomware_pressed():       buy_upgrade("ransomware")
 # ═════════════════════════════════════════════════════════════════
 
 func _setup_dynamic_ui():
+	# ── DEFENSE PANEL BACKGROUND ────────────────────────────────
 	var dp          = TextureRect.new()
 	dp.texture      = load("res://Assets/HUD_DefensePanel.png")
 	dp.anchor_left  = 1.0; dp.anchor_right  = 1.0
@@ -850,14 +851,16 @@ func _setup_dynamic_ui():
 	dp.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
 	dp.stretch_mode = TextureRect.STRETCH_SCALE
 
+	# ── IMPROVED DARK OVERLAY FOR READABILITY ───────────────────
 	var main_mask         = ColorRect.new()
-	main_mask.color       = Color(0.01, 0.08, 0.04, 1.0)
+	main_mask.color       = Color(0.0, 0.05, 0.02, 0.95)  # Darker, more opaque
 	main_mask.offset_left = 10;  main_mask.offset_top    = 45
 	main_mask.offset_right= 310; main_mask.offset_bottom = 285
 	main_mask.show_behind_parent = true
 	main_mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dp.add_child(main_mask)
 
+	# ── ALERT BADGE (STATUS INDICATOR) ──────────────────────────
 	alert_badge             = TextureRect.new()
 	alert_badge.offset_left = 20; alert_badge.offset_top    = 60
 	alert_badge.offset_right= 80; alert_badge.offset_bottom = 120
@@ -865,41 +868,74 @@ func _setup_dynamic_ui():
 	alert_badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	dp.add_child(alert_badge)
 
+	# ── STATUS TITLE & LABEL ────────────────────────────────────
 	var lbl_status_title         = Label.new()
-	lbl_status_title.text        = "STATUS:"
+	lbl_status_title.text        = "AI STATUS:"
 	lbl_status_title.offset_left = 100; lbl_status_title.offset_top = 65
-	lbl_status_title.add_theme_color_override("font_color", Color(0, 0.8, 0.4))
+	lbl_status_title.add_theme_font_size_override("font_size", 12)
+	lbl_status_title.add_theme_color_override("font_color", Color(0.2, 0.9, 0.5))
 	dp.add_child(lbl_status_title)
 
 	status_label             = Label.new()
 	status_label.text        = "DORMANT"
 	status_label.offset_left = 165; status_label.offset_top = 65
-	status_label.add_theme_color_override("font_color", Color.WHITE)
+	status_label.add_theme_font_size_override("font_size", 12)
+	status_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
 	dp.add_child(status_label)
 
+	# ── PATCHES DEPLOYED COUNTER ────────────────────────────────
 	var lbl_patch_title         = Label.new()
-	lbl_patch_title.text        = "PATCHES DEPLOYED:"
-	lbl_patch_title.offset_left = 100; lbl_patch_title.offset_top = 95
-	lbl_patch_title.add_theme_color_override("font_color", Color(0, 0.8, 0.4))
+	lbl_patch_title.text        = "PATCHES:"
+	lbl_patch_title.offset_left = 100; lbl_patch_title.offset_top = 88
+	lbl_patch_title.add_theme_font_size_override("font_size", 11)
+	lbl_patch_title.add_theme_color_override("font_color", Color(0.2, 0.9, 0.5))
 	dp.add_child(lbl_patch_title)
 
 	patch_count_label             = Label.new()
 	patch_count_label.text        = "0"
-	patch_count_label.offset_left = 265; patch_count_label.offset_top = 95
-	patch_count_label.add_theme_color_override("font_color", Color(0, 1, 0))
+	patch_count_label.offset_left = 265; patch_count_label.offset_top = 88
+	patch_count_label.add_theme_font_size_override("font_size", 11)
+	patch_count_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.4))
 	dp.add_child(patch_count_label)
 
+	# ── THREAT LEVEL INDICATOR (NEW) ────────────────────────────
+	var lbl_threat_title         = Label.new()
+	lbl_threat_title.text        = "THREAT:"
+	lbl_threat_title.offset_left = 100; lbl_threat_title.offset_top = 105
+	lbl_threat_title.add_theme_font_size_override("font_size", 10)
+	lbl_threat_title.add_theme_color_override("font_color", Color(0.6, 0.6, 0.8))
+	dp.add_child(lbl_threat_title)
+
+	var threat_level_label       = Label.new()
+	threat_level_label.name      = "ThreatLevelLabel"
+	threat_level_label.text      = "LOW"
+	threat_level_label.offset_left = 165; threat_level_label.offset_top = 105
+	threat_level_label.add_theme_font_size_override("font_size", 10)
+	threat_level_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	dp.add_child(threat_level_label)
+
+	# ── LOG SEPARATOR ───────────────────────────────────────────
 	var log_separator         = ColorRect.new()
-	log_separator.color       = Color(0, 0.5, 0.2, 0.5)
-	log_separator.offset_left = 20;  log_separator.offset_top    = 130
-	log_separator.offset_right= 300; log_separator.offset_bottom = 132
+	log_separator.color       = Color(0.2, 0.6, 0.3, 0.6)
+	log_separator.offset_left = 12;  log_separator.offset_top    = 128
+	log_separator.offset_right= 308; log_separator.offset_bottom = 130
 	dp.add_child(log_separator)
 
+	# ── DEFENSE LOG (SCROLLING TEXT) ────────────────────────────
 	defense_log                  = RichTextLabel.new()
 	defense_log.bbcode_enabled   = true
 	defense_log.scroll_following = true
-	defense_log.offset_left      = 20;  defense_log.offset_top    = 140
-	defense_log.offset_right     = 300; defense_log.offset_bottom = 280
+	defense_log.custom_minimum_size = Vector2(300, 150)
+	defense_log.offset_left      = 12;  defense_log.offset_top    = 135
+	defense_log.offset_right     = 308; defense_log.offset_bottom = 280
+	defense_log.add_theme_font_size_override("font_size", 9)
+	# Style the log background
+	var log_style = StyleBoxFlat.new()
+	log_style.bg_color = Color(0.01, 0.02, 0.01, 0.8)
+	log_style.border_color = Color(0.2, 0.5, 0.2, 0.4)
+	log_style.set_border_enabled(true)
+	log_style.set_border_width_all(1)
+	defense_log.add_theme_stylebox_override("normal", log_style)
 	dp.add_child(defense_log)
 
 	var canvas = $CanvasLayer if has_node("CanvasLayer") else self
