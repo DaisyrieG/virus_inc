@@ -162,27 +162,15 @@ func _align_crt_monitor():
 	var bg = crt_monitor.get_node_or_null("ComputerBG")
 	var overlay = crt_monitor.get_node_or_null("ScreenOverlay")
 	if bg and overlay:
-		# Lock the background to exactly 1200x800 and center it programmatically
+		# Use absolute pixel positioning for foolproof alignment
+		var screen_center = Vector2(960, 540)
+		
 		bg.custom_minimum_size = Vector2(1200, 800)
-		bg.anchor_left = 0.5
-		bg.anchor_right = 0.5
-		bg.anchor_top = 0.5
-		bg.anchor_bottom = 0.5
-		bg.offset_left = -600
-		bg.offset_right = 600
-		bg.offset_top = -400
-		bg.offset_bottom = 400
+		bg.size = Vector2(1200, 800)
+		bg.position = screen_center - (bg.size / 2.0)
 		
-		# Align the screen overlay precisely inside ComputerBG's bounds
-		overlay.anchor_left = bg.anchor_left
-		overlay.anchor_right = bg.anchor_right
-		overlay.anchor_top = bg.anchor_top
-		overlay.anchor_bottom = bg.anchor_bottom
-		
-		overlay.offset_left = bg.offset_left + 240
-		overlay.offset_right = bg.offset_right - 210
-		overlay.offset_top = bg.offset_top + 60
-		overlay.offset_bottom = bg.offset_bottom - 390
+		overlay.size = Vector2(750, 350) # 1200 - 240 - 210, 800 - 60 - 390
+		overlay.position = bg.position + Vector2(240, 60)
 		
 		# Force ScreenOverlay to draw ON TOP of ComputerBG and receive clicks
 		crt_monitor.move_child(overlay, crt_monitor.get_child_count() - 1)
@@ -190,14 +178,8 @@ func _align_crt_monitor():
 		# Ensure the GridContainer fits inside perfectly
 		var grid = overlay.get_node_or_null("GridContainer")
 		if grid:
-			grid.anchor_left = 0.5
-			grid.anchor_right = 0.5
-			grid.anchor_top = 0.5
-			grid.anchor_bottom = 0.5
-			grid.offset_left = -350
-			grid.offset_right = 350
-			grid.offset_top = -120
-			grid.offset_bottom = 180
+			grid.size = Vector2(700, 300)
+			grid.position = (overlay.size - grid.size) / 2.0
 
 
 
