@@ -163,14 +163,15 @@ func _align_crt_monitor():
 	var overlay = crt_monitor.get_node_or_null("ScreenOverlay")
 	if bg and overlay:
 		# Use absolute pixel positioning for foolproof alignment
-		var screen_center = Vector2(960, 540)
+		# The COMPUTER.png asset is 1920x1080 natively. Let's make it full screen.
+		bg.custom_minimum_size = Vector2(1920, 1080)
+		bg.size = Vector2(1920, 1080)
+		bg.position = Vector2(0, 0)
 		
-		bg.custom_minimum_size = Vector2(1200, 800)
-		bg.size = Vector2(1200, 800)
-		bg.position = screen_center - (bg.size / 2.0)
-		
-		overlay.size = Vector2(750, 350) # 1200 - 240 - 210, 800 - 60 - 390
-		overlay.position = bg.position + Vector2(240, 60)
+		# The black screen area inside COMPUTER.png is exactly at ~ X:670, Y:143
+		# and is about 609x445 in size. We use a slightly smaller box to fit safely inside the bezel.
+		overlay.size = Vector2(590, 425)
+		overlay.position = Vector2(680, 153)
 		
 		# Force ScreenOverlay to draw ON TOP of ComputerBG and receive clicks
 		crt_monitor.move_child(overlay, crt_monitor.get_child_count() - 1)
@@ -178,7 +179,7 @@ func _align_crt_monitor():
 		# Ensure the GridContainer fits inside perfectly
 		var grid = overlay.get_node_or_null("GridContainer")
 		if grid:
-			grid.size = Vector2(700, 300)
+			grid.size = Vector2(560, 320)
 			grid.position = (overlay.size - grid.size) / 2.0
 
 
