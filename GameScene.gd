@@ -1046,11 +1046,3 @@ func defense_log_event(msg: String, color: String = "white"):
 		var time = Time.get_time_string_from_system()
 		defense_log.append_text("[color=gray][%s][/color] [color=%s]%s[/color]\n" % [time, color, msg])
 
-func _on_email_phishing_pressed(): buy_upgrade("email_phishing")
-func _on_cloud_exploit_pressed(): buy_upgrade("cloud_exploit")
-func _on_code_obfuscation_pressed(): buy_upgrade("code_obfuscation")
-func _on_fileless_malware_pressed(): buy_upgrade("fileless_malware")
-func _on_registry_persist_pressed(): buy_upgrade("registry_persist")
-func _on_anti_antivirus_pressed(): buy_upgrade("anti_antivirus")
-func _on_keylogger_pressed(): buy_upgrade("keylogger")
-func _on_ransomware_pressed(): buy_upgrade("ransomware")
