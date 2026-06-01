@@ -58,9 +58,6 @@ const GA_POP_SIZE:    int   = 10
 const GA_MUTATION_RATE: float = 0.15
 var ga_generation:    int   = 0
 
-# ── BAYESIAN DEFENSE AI ─────────────────────────────────────────
-var bayesian_defense: BayesianDefense
-
 const TOTAL_COUNTRIES: int   = 7
 const WIN_THRESHOLD:   float = 0.90
 const LOSE_THRESHOLD:  float = 1.0
@@ -134,9 +131,6 @@ func _ready():
 
 	_ga_init_population()
 	_setup_dynamic_ui()
-	
-	# Initialize Bayesian Defense AI
-	bayesian_defense = BayesianDefense.new()
 
 	if end_screen:
 		end_screen.hide()
@@ -306,7 +300,10 @@ func _dijkstra_spread():
 	)
 	var distances = result["distances"]
 	var previous  = result["previous"]
-	var targets   = Dijkstra.get_spread_targets(distances, infected_countries, [])
+	# BUG FIX: Pass patched_countries so Dijkstra excludes them from spread targets.
+	# Without this, patched countries appear as valid spread targets and bypass the
+	# patched check, causing double-logic conflicts and incorrect spread routing.
+	var targets   = Dijkstra.get_spread_targets(distances, infected_countries, patched_countries)
 
 	if targets.size() == 0:
 		return
@@ -350,66 +347,89 @@ func _dijkstra_spread():
 #         BAYESIAN DEFENSE — CORRECTED VERSION
 # ═════════════════════════════════════════════════════════════════
 
-# Bayes constants moved to BayesianDefense.gd for centralized AI logic
+const PATCH_THRESHOLD:         float = 0.82
+const P_SIGNAL_INFECTED:       float = 0.78
+const P_SIGNAL_NOT_INFECTED:   float = 0.18
+const BAYES_DECAY:             float = 0.10
 
 func _bayesian_defense():
-	# ── CALL IMPROVED BAYESIAN DEFENSE AI ───────────────────────
-	var defense_result = bayesian_defense.process_turn(
-		world_graph.keys(),
-		infected_countries,
-		patched_countries,
-		country_detection,
-		virus_stealth,
-		virus_resistance,
-		upgrades["code_obfuscation"]["bought"],
-		upgrades["fileless_malware"]["bought"],
-		upgrades["registry_persist"]["bought"],
-		upgrades["anti_antivirus"]["bought"],
-		1  # max_patches per turn
-	)
-	
-	# ── SCANNING UPDATES (show AI tracking) ──────────────────────
-	if defense_result["scanning"].size() > 0:
-		for scan_info in defense_result["scanning"]:
-			var confidence = int(scan_info["probability"] * 100)
-			defense_log_event(
-				">>> Monitoring %s [P=%d%%]" % [scan_info["country"], confidence],
-				"888888"  # Gray for scanning
-			)
-	
-	# ── HANDLE PATCH FAILURES (show AI learning) ────────────────
-	if defense_result["resisted"].size() > 0:
-		defense_log_event("=== PATCH ATTEMPT FAILED ===", "ff6600")
-		for resisted_country in defense_result["resisted"]:
-			log_event("Defense tried to patch %s — VIRUS RESISTED!" % [resisted_country], "orange")
-			defense_log_event(
-				"! Strain too resistant (adapting strategy)",
-				"ff9933"
-			)
-			show_notification("PATCH RESISTED: " + resisted_country, Color(1.0, 0.6, 0.1))
-	
-	# ── APPLY SUCCESSFUL PATCHES (show AI winning) ──────────────
-	if defense_result["patched"].size() > 0:
-		defense_log_event("=== PATCH SUCCESSFUL ===", "00ff66")
-		for patched_country in defense_result["patched"]:
-			infected_countries.erase(patched_country)
-			patched_countries.append(patched_country)
-			total_patches += 1
-			var prob = int(country_detection.get(patched_country, 0.5) * 100)
-			defense_log_event(
-				"[✓] Eliminated %s (confidence: %d%%)" % [patched_country, prob],
-				"00ff99"
-			)
-			detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
-			_clear_dots_in_country(patched_country)
-			log_event("SECURED: %s — Bayesian AI patched it!" % [patched_country], "green")
-			show_notification("COUNTRY SECURED: " + patched_country, Color(0.2, 0.9, 0.3))
-	
-	# ── CONTAINMENT SUCCESS ─────────────────────────────────────
+	var best_target    = ""
+	var best_posterior = 0.0
+
+	for country in world_graph.keys():
+		if country in patched_countries:
+			country_detection[country] = maxf(0.01, country_detection.get(country, 0.01) - 0.02)
+			continue
+
+		# ── OBSERVE: signal fires this turn? ──────────────────
+		var signal_strength = _observe_signal(country)
+		var signal_fired: bool = randf() < signal_strength
+
+		# ── BAYES UPDATE ──────────────────────────────────────
+		var prior   = country_detection.get(country, 0.05)
+		var p_s_i:  float
+		var p_s_ni: float
+
+		if signal_fired:
+			p_s_i  = P_SIGNAL_INFECTED
+			p_s_ni = P_SIGNAL_NOT_INFECTED
+		else:
+			p_s_i  = 1.0 - P_SIGNAL_INFECTED
+			p_s_ni = 1.0 - P_SIGNAL_NOT_INFECTED
+
+		var numerator = p_s_i  * prior
+		var evidence  = numerator + p_s_ni * (1.0 - prior)
+		var posterior = numerator / evidence if evidence > 0.001 else prior
+
+		posterior = clampf(posterior, 0.01, 0.99)
+
+		if country not in infected_countries:
+			posterior = maxf(0.01, posterior - BAYES_DECAY)
+
+		country_detection[country] = posterior
+
+		if posterior >= 0.40 and country in infected_countries:
+			defense_log_event("Scanning %s... P=%.0f%%" % [country, posterior * 100], "yellow")
+
+		if country in infected_countries and posterior > best_posterior:
+			best_posterior = posterior
+			best_target    = country
+
+	if best_target == "" or best_posterior < PATCH_THRESHOLD:
+		return
+
+	var resist_chance = clampf(virus_resistance * 0.06, 0.0, 0.55)
+	if upgrades["registry_persist"]["bought"]:
+		resist_chance += 0.15
+	if upgrades["anti_antivirus"]["bought"]:
+		resist_chance += 0.25
+
+	if randf() < resist_chance:
+		log_event("Defense tried to patch %s — VIRUS RESISTED! (%.0f%%)" % [
+			best_target, resist_chance * 100], "orange")
+		defense_log_event("[!] %s resisted patch (%.0f%%)" % [best_target, resist_chance * 100], "orange")
+		show_notification("PATCH RESISTED: " + best_target, Color(1.0, 0.6, 0.1))
+		country_detection[best_target] = 0.30
+		return
+
+	infected_countries.erase(best_target)
+	patched_countries.append(best_target)
+	total_patches += 1
+	country_detection[best_target] = 0.05
+
+	defense_log_event("[✓] PATCHED %s! P was %.0f%%" % [best_target, best_posterior * 100], "lime")
+	detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
+
+	_clear_dots_in_country(best_target)
+	_update_map_visuals()
+
+	log_event("SECURED: %s — Bayesian AI patched it! (P=%.0f%%)" % [
+		best_target, best_posterior * 100], "green")
+	show_notification("COUNTRY SECURED: " + best_target, Color(0.2, 0.9, 0.3))
+
 	if infected_countries.size() == 0:
 		log_event("ALL COUNTRIES PATCHED — spread faster or upgrade!", "red")
 		show_notification("ALL INFECTIONS CLEARED!", Color(1, 0.2, 0.2))
-		defense_log_event("Network secured. All threats eliminated.", "00ffff")
 
 
 func _observe_signal(country: String) -> float:
@@ -439,10 +459,11 @@ func _update_map_visuals():
 			var spr       = Sprite2D.new()
 			spr.centered  = false
 			spr.position  = Vector2.ZERO
-			if country_hover_images.has(country):
-				var tex = load(country_hover_images[country])
-				if tex:
-					spr.texture = tex
+			# BUG FIX: Use cached textures from country_hover_textures instead of
+			# calling load() inside this hot-path function. load() is synchronous
+			# and re-parses the resource every call — causes hitches on spread events.
+			if country_hover_textures.has(country):
+				spr.texture = country_hover_textures[country]
 			spr.visible = false
 			map_sprite.add_child(spr)
 			infection_sprites[country] = spr
@@ -466,8 +487,14 @@ func _update_map_visuals():
 
 func _ga_init_population():
 	ga_population.clear()
+	# BUG FIX: Initialize with random diversity so selection pressure works from gen-1.
+	# Starting all genomes at {1,1,1} means zero variation — no evolution happens early.
 	for i in range(GA_POP_SIZE):
-		ga_population.append({ "speed": 1.0, "stealth": 1.0, "resistance": 1.0 })
+		ga_population.append({
+			"speed":      randf_range(1.0, 4.0),
+			"stealth":    randf_range(1.0, 4.0),
+			"resistance": randf_range(1.0, 4.0)
+		})
 
 func _ga_fitness(g: Dictionary) -> float:
 	return (infected_countries.size() * g["speed"]) \
@@ -856,164 +883,114 @@ func _on_ransomware_pressed():       buy_upgrade("ransomware")
 # ═════════════════════════════════════════════════════════════════
 
 func _setup_dynamic_ui():
-	# ── DEFENSE PANEL BACKGROUND ────────────────────────────────
-	var dp          = TextureRect.new()
-	dp.texture      = load("res://Assets/HUD_DefensePanel.png")
-	dp.anchor_left  = 1.0; dp.anchor_right  = 1.0
-	dp.anchor_top   = 0.0; dp.anchor_bottom = 0.0
-	dp.offset_left  = -330; dp.offset_right = -10
-	dp.offset_top   = 10;   dp.offset_bottom = 300
-	dp.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-	dp.stretch_mode = TextureRect.STRETCH_SCALE
-
-	# ── IMPROVED DARK OVERLAY FOR READABILITY ───────────────────
-	var main_mask         = ColorRect.new()
-	main_mask.color       = Color(0.0, 0.05, 0.02, 0.95)  # Darker, more opaque
-	main_mask.offset_left = 10;  main_mask.offset_top    = 45
-	main_mask.offset_right= 310; main_mask.offset_bottom = 285
-	main_mask.show_behind_parent = true
-	main_mask.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	dp.add_child(main_mask)
-
-	# ── ALERT BADGE (STATUS INDICATOR) ──────────────────────────
-	alert_badge             = TextureRect.new()
-	alert_badge.offset_left = 20; alert_badge.offset_top    = 60
-	alert_badge.offset_right= 80; alert_badge.offset_bottom = 120
-	alert_badge.expand_mode  = TextureRect.EXPAND_IGNORE_SIZE
-	alert_badge.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	dp.add_child(alert_badge)
-
-	# ── STATUS TITLE & LABEL ────────────────────────────────────
-	var lbl_status_title         = Label.new()
-	lbl_status_title.text        = "AI STATUS:"
-	lbl_status_title.offset_left = 100; lbl_status_title.offset_top = 65
-	lbl_status_title.add_theme_font_size_override("font_size", 12)
-	lbl_status_title.add_theme_color_override("font_color", Color(0.2, 0.9, 0.5))
+	var dp = Panel.new()
+	
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.02, 0.05, 0.03, 0.95)
+	style.border_color = Color(0.0, 0.8, 0.4, 0.8)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.corner_radius_top_left = 5
+	style.corner_radius_top_right = 5
+	style.corner_radius_bottom_left = 5
+	style.corner_radius_bottom_right = 5
+	dp.add_theme_stylebox_override("panel", style)
+	
+	dp.anchor_left = 1.0
+	dp.anchor_right = 1.0
+	dp.anchor_top = 0.0
+	dp.anchor_bottom = 0.0
+	dp.offset_left = -340
+	dp.offset_top = 20
+	dp.offset_right = -20
+	dp.offset_bottom = 340
+	
+	var title = Label.new()
+	title.text = "BAYESIAN DEFENSE AI"
+	title.add_theme_color_override("font_color", Color(0.0, 1.0, 0.5))
+	title.add_theme_font_size_override("font_size", 18)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.offset_top = 10
+	title.anchor_right = 1.0
+	dp.add_child(title)
+	
+	var sep1 = ColorRect.new()
+	sep1.color = Color(0.0, 0.8, 0.4, 0.5)
+	sep1.offset_left = 15
+	sep1.offset_top = 40
+	sep1.offset_right = 305
+	sep1.offset_bottom = 42
+	dp.add_child(sep1)
+	
+	var lbl_status_title = Label.new()
+	lbl_status_title.text = "SYSTEM STATUS:"
+	lbl_status_title.offset_left = 15
+	lbl_status_title.offset_top = 55
+	lbl_status_title.add_theme_color_override("font_color", Color(0.6, 0.8, 0.7))
 	dp.add_child(lbl_status_title)
-
-	status_label             = Label.new()
-	status_label.text        = "DORMANT"
-	status_label.offset_left = 165; status_label.offset_top = 65
-	status_label.add_theme_font_size_override("font_size", 12)
-	status_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	
+	status_label = Label.new()
+	status_label.text = "🟢 DORMANT"
+	status_label.offset_left = 150
+	status_label.offset_top = 55
+	status_label.add_theme_color_override("font_color", Color.WHITE)
 	dp.add_child(status_label)
-
-	# ── PATCHES DEPLOYED COUNTER ────────────────────────────────
-	var lbl_patch_title         = Label.new()
-	lbl_patch_title.text        = "PATCHES:"
-	lbl_patch_title.offset_left = 100; lbl_patch_title.offset_top = 88
-	lbl_patch_title.add_theme_font_size_override("font_size", 11)
-	lbl_patch_title.add_theme_color_override("font_color", Color(0.2, 0.9, 0.5))
+	
+	var lbl_patch_title = Label.new()
+	lbl_patch_title.text = "DEPLOYED PATCHES:"
+	lbl_patch_title.offset_left = 15
+	lbl_patch_title.offset_top = 85
+	lbl_patch_title.add_theme_color_override("font_color", Color(0.6, 0.8, 0.7))
 	dp.add_child(lbl_patch_title)
-
-	patch_count_label             = Label.new()
-	patch_count_label.text        = "0"
-	patch_count_label.offset_left = 265; patch_count_label.offset_top = 88
-	patch_count_label.add_theme_font_size_override("font_size", 11)
-	patch_count_label.add_theme_color_override("font_color", Color(0.0, 1.0, 0.4))
+	
+	patch_count_label = Label.new()
+	patch_count_label.text = "0"
+	patch_count_label.offset_left = 180
+	patch_count_label.offset_top = 85
+	patch_count_label.add_theme_color_override("font_color", Color(0, 1, 0))
 	dp.add_child(patch_count_label)
-
-	# ── THREAT LEVEL INDICATOR (NEW) ────────────────────────────
-	var lbl_threat_title         = Label.new()
-	lbl_threat_title.text        = "THREAT:"
-	lbl_threat_title.offset_left = 100; lbl_threat_title.offset_top = 105
-	lbl_threat_title.add_theme_font_size_override("font_size", 10)
-	lbl_threat_title.add_theme_color_override("font_color", Color(0.6, 0.6, 0.8))
-	dp.add_child(lbl_threat_title)
-
-	var threat_level_label       = Label.new()
-	threat_level_label.name      = "ThreatLevelLabel"
-	threat_level_label.text      = "LOW"
-	threat_level_label.offset_left = 165; threat_level_label.offset_top = 105
-	threat_level_label.add_theme_font_size_override("font_size", 10)
-	threat_level_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
-	dp.add_child(threat_level_label)
-
-	# ── LOG SEPARATOR ───────────────────────────────────────────
-	var log_separator         = ColorRect.new()
-	log_separator.color       = Color(0.2, 0.6, 0.3, 0.6)
-	log_separator.offset_left = 12;  log_separator.offset_top    = 128
-	log_separator.offset_right= 308; log_separator.offset_bottom = 130
-	dp.add_child(log_separator)
-
-	# ── DEFENSE LOG (SCROLLING TEXT) ────────────────────────────
-	defense_log                  = RichTextLabel.new()
-	defense_log.bbcode_enabled   = true
+	
+	var sep2 = ColorRect.new()
+	sep2.color = Color(0.0, 0.8, 0.4, 0.5)
+	sep2.offset_left = 15
+	sep2.offset_top = 115
+	sep2.offset_right = 305
+	sep2.offset_bottom = 117
+	dp.add_child(sep2)
+	
+	defense_log = RichTextLabel.new()
+	defense_log.bbcode_enabled = true
 	defense_log.scroll_following = true
-	defense_log.custom_minimum_size = Vector2(300, 150)
-	defense_log.offset_left      = 12;  defense_log.offset_top    = 135
-	defense_log.offset_right     = 308; defense_log.offset_bottom = 280
-	defense_log.add_theme_font_size_override("font_size", 9)
-	# Style the log background
-	var log_style = StyleBoxFlat.new()
-	log_style.bg_color = Color(0.01, 0.02, 0.01, 0.8)
-	log_style.border_color = Color(0.2, 0.5, 0.2, 0.4)
-	log_style.set_border_enabled(true)
-	log_style.set_border_width_all(1)
-	defense_log.add_theme_stylebox_override("normal", log_style)
+	defense_log.offset_left = 15
+	defense_log.offset_top = 125
+	defense_log.offset_right = 305
+	defense_log.offset_bottom = 310
 	dp.add_child(defense_log)
-
+	
 	var canvas = $CanvasLayer if has_node("CanvasLayer") else self
 	canvas.add_child(dp)
 
 func _update_defense_panel():
 	if not status_label:
 		return
-	
 	var det_pct = int(detection_level * 100)
-	var infection_rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
-	var threat_level = "LOW"
-	var threat_color = Color(0.4, 1.0, 0.4)
-	
-	# ── ADAPTIVE THREAT ASSESSMENT (based on improved AI logic) ──
-	if infection_rate > 0.6:
-		threat_level = "CRITICAL"
-		threat_color = Color.RED
-	elif infection_rate > 0.4:
-		threat_level = "HIGH"
-		threat_color = Color(1.0, 0.6, 0.0)
-	elif infection_rate > 0.2:
-		threat_level = "MEDIUM"
-		threat_color = Color(1.0, 1.0, 0.3)
-	else:
-		threat_level = "LOW"
-		threat_color = Color(0.4, 1.0, 0.4)
-	
-	# Update threat level label
-	if has_node("CanvasLayer") and $CanvasLayer.get_children().size() > 0:
-		var last_child = $CanvasLayer.get_child($CanvasLayer.get_child_count() - 1)
-		if last_child.has_node("ThreatLevelLabel"):
-			var threat_label = last_child.get_node("ThreatLevelLabel")
-			threat_label.text = threat_level
-			threat_label.add_theme_color_override("font_color", threat_color)
-	
-	# ── AI STATUS BASED ON DETECTION LEVEL ──────────────────────
 	if detection_level >= 0.75:
-		alert_badge.texture = load("res://Assets/HUD_Alert_Critical.png")
-		status_label.text   = "MAX RESPONSE"
+		status_label.text = "🔴 MAX RESPONSE [%d%%]" % det_pct
 		status_label.add_theme_color_override("font_color", Color.RED)
 	elif detection_level >= 0.50:
-		alert_badge.texture = load("res://Assets/HUD_Alert_High.png")
-		status_label.text   = "ACTIVE HUNT"
-		status_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
+		status_label.text = "🟠 ACTIVE HUNTING [%d%%]" % det_pct
+		status_label.add_theme_color_override("font_color", Color.ORANGE)
 	elif detection_level >= 0.20:
-		alert_badge.texture = load("res://Assets/HUD_Alert_Medium.png")
-		status_label.text   = "SCANNING"
+		status_label.text = "🟡 SCANNING... [%d%%]" % det_pct
 		status_label.add_theme_color_override("font_color", Color.YELLOW)
 	else:
-		alert_badge.texture = load("res://Assets/HUD_Alert_Low.png")
-		status_label.text   = "DORMANT"
-		status_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
-	
+		status_label.text = "🟢 DORMANT [%d%%]" % det_pct
+		status_label.add_theme_color_override("font_color", Color.WHITE)
 	patch_count_label.text = str(total_patches)
 
 func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:
-		# Add timestamp-like turn indicator for context
-		var prefix = "[Turn %d] " % turn_count
-		var formatted_msg = prefix + msg
-		defense_log.append_text("[color=%s]%s[/color]\n" % [color, formatted_msg])
-		# Limit log to last 50 lines to avoid performance issues
-		var line_count = defense_log.get_line_count()
-		if line_count > 50:
-			defense_log.text = "\n".join(defense_log.text.split("\n").slice(5))
+		var time = Time.get_time_string_from_system()
+		defense_log.append_text("[color=gray][%s][/color] [color=%s]%s[/color]\n" % [time, color, msg])
