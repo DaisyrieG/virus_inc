@@ -58,6 +58,9 @@ const GA_POP_SIZE:    int   = 10
 const GA_MUTATION_RATE: float = 0.15
 var ga_generation:    int   = 0
 
+# ── BAYESIAN DEFENSE AI ─────────────────────────────────────────
+var bayesian_defense: BayesianDefense
+
 const TOTAL_COUNTRIES: int   = 7
 const WIN_THRESHOLD:   float = 0.90
 const LOSE_THRESHOLD:  float = 1.0
@@ -131,6 +134,9 @@ func _ready():
 
 	_ga_init_population()
 	_setup_dynamic_ui()
+	
+	# Initialize Bayesian Defense AI
+	bayesian_defense = BayesianDefense.new()
 
 	if end_screen:
 		end_screen.hide()
@@ -344,86 +350,48 @@ func _dijkstra_spread():
 #         BAYESIAN DEFENSE — CORRECTED VERSION
 # ═════════════════════════════════════════════════════════════════
 
-const PATCH_THRESHOLD:         float = 0.82
-const P_SIGNAL_INFECTED:       float = 0.78
-const P_SIGNAL_NOT_INFECTED:   float = 0.18
-const BAYES_DECAY:             float = 0.10
+# Bayes constants moved to BayesianDefense.gd for centralized AI logic
 
 func _bayesian_defense():
-	var best_target    = ""
-	var best_posterior = 0.0
-
-	for country in world_graph.keys():
-		if country in patched_countries:
-			country_detection[country] = maxf(0.01, country_detection.get(country, 0.01) - 0.02)
-			continue
-
-		# ── OBSERVE: signal fires this turn? ──────────────────
-		var signal_strength = _observe_signal(country)
-		var signal_fired: bool = randf() < signal_strength
-
-		# ── BAYES UPDATE ──────────────────────────────────────
-		var prior   = country_detection.get(country, 0.05)
-		var p_s_i:  float
-		var p_s_ni: float
-
-		if signal_fired:
-			p_s_i  = P_SIGNAL_INFECTED
-			p_s_ni = P_SIGNAL_NOT_INFECTED
-		else:
-			p_s_i  = 1.0 - P_SIGNAL_INFECTED
-			p_s_ni = 1.0 - P_SIGNAL_NOT_INFECTED
-
-		var numerator = p_s_i  * prior
-		var evidence  = numerator + p_s_ni * (1.0 - prior)
-		var posterior = numerator / evidence if evidence > 0.001 else prior
-
-		posterior = clampf(posterior, 0.01, 0.99)
-
-		if country not in infected_countries:
-			posterior = maxf(0.01, posterior - BAYES_DECAY)
-
-		country_detection[country] = posterior
-
-		if posterior >= 0.40 and country in infected_countries:
-			defense_log_event("Scanning %s... P=%.0f%%" % [country, posterior * 100], "yellow")
-
-		if country in infected_countries and posterior > best_posterior:
-			best_posterior = posterior
-			best_target    = country
-
-	if best_target == "" or best_posterior < PATCH_THRESHOLD:
-		return
-
-	var resist_chance = clampf(virus_resistance * 0.06, 0.0, 0.55)
-	if upgrades["registry_persist"]["bought"]:
-		resist_chance += 0.15
-	if upgrades["anti_antivirus"]["bought"]:
-		resist_chance += 0.25
-
-	if randf() < resist_chance:
-		log_event("Defense tried to patch %s — VIRUS RESISTED! (%.0f%%)" % [
-			best_target, resist_chance * 100], "orange")
-		defense_log_event("[!] %s resisted patch (%.0f%%)" % [best_target, resist_chance * 100], "orange")
-		show_notification("PATCH RESISTED: " + best_target, Color(1.0, 0.6, 0.1))
-		country_detection[best_target] = 0.30
-		return
-
-	infected_countries.erase(best_target)
-	patched_countries.append(best_target)
-	total_patches += 1
-	country_detection[best_target] = 0.05
-
-	defense_log_event("[✓] PATCHED %s! P was %.0f%%" % [best_target, best_posterior * 100], "lime")
-	detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
-
-	_clear_dots_in_country(best_target)
-	_update_map_visuals()
-
-	log_event("SECURED: %s — Bayesian AI patched it! (P=%.0f%%)" % [
-		best_target, best_posterior * 100], "green")
-	show_notification("COUNTRY SECURED: " + best_target, Color(0.2, 0.9, 0.3))
-
+	# ── CALL IMPROVED BAYESIAN DEFENSE AI ───────────────────────
+	var defense_result = bayesian_defense.process_turn(
+		world_graph.keys(),
+		infected_countries,
+		patched_countries,
+		country_detection,
+		virus_stealth,
+		virus_resistance,
+		upgrades["code_obfuscation"]["bought"],
+		upgrades["fileless_malware"]["bought"],
+		upgrades["registry_persist"]["bought"],
+		upgrades["anti_antivirus"]["bought"],
+		1  # max_patches per turn
+	)
+	
+	# ── SCANNING UPDATES ────────────────────────────────────────
+	for scan_info in defense_result["scanning"]:
+		defense_log_event(
+			"Scanning %s... P=%.0f%%" % [scan_info["country"], scan_info["probability"] * 100],
+			"yellow"
+		)
+	
+	# ── HANDLE PATCH FAILURES ───────────────────────────────────
+	for resisted_country in defense_result["resisted"]:
+		log_event("Defense tried to patch %s — VIRUS RESISTED!" % [resisted_country], "orange")
+		defense_log_event("[!] %s resisted patch" % [resisted_country], "orange")
+		show_notification("PATCH RESISTED: " + resisted_country, Color(1.0, 0.6, 0.1))
+	
+	# ── APPLY SUCCESSFUL PATCHES ────────────────────────────────
+	for patched_country in defense_result["patched"]:
+		infected_countries.erase(patched_country)
+		patched_countries.append(patched_country)
+		total_patches += 1
+		defense_log_event("[✓] PATCHED %s!" % [patched_country], "lime")
+		detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
+		_clear_dots_in_country(patched_country)
+		log_event("SECURED: %s — Bayesian AI patched it!" % [patched_country], "green")
+		show_notification("COUNTRY SECURED: " + patched_country, Color(0.2, 0.9, 0.3))
+	
 	if infected_countries.size() == 0:
 		log_event("ALL COUNTRIES PATCHED — spread faster or upgrade!", "red")
 		show_notification("ALL INFECTIONS CLEARED!", Color(1, 0.2, 0.2))
