@@ -368,33 +368,48 @@ func _bayesian_defense():
 		1  # max_patches per turn
 	)
 	
-	# ── SCANNING UPDATES ────────────────────────────────────────
-	for scan_info in defense_result["scanning"]:
-		defense_log_event(
-			"Scanning %s... P=%.0f%%" % [scan_info["country"], scan_info["probability"] * 100],
-			"yellow"
-		)
+	# ── SCANNING UPDATES (show AI tracking) ──────────────────────
+	if defense_result["scanning"].size() > 0:
+		for scan_info in defense_result["scanning"]:
+			var confidence = int(scan_info["probability"] * 100)
+			defense_log_event(
+				">>> Monitoring %s [P=%d%%]" % [scan_info["country"], confidence],
+				"888888"  # Gray for scanning
+			)
 	
-	# ── HANDLE PATCH FAILURES ───────────────────────────────────
-	for resisted_country in defense_result["resisted"]:
-		log_event("Defense tried to patch %s — VIRUS RESISTED!" % [resisted_country], "orange")
-		defense_log_event("[!] %s resisted patch" % [resisted_country], "orange")
-		show_notification("PATCH RESISTED: " + resisted_country, Color(1.0, 0.6, 0.1))
+	# ── HANDLE PATCH FAILURES (show AI learning) ────────────────
+	if defense_result["resisted"].size() > 0:
+		defense_log_event("=== PATCH ATTEMPT FAILED ===", "ff6600")
+		for resisted_country in defense_result["resisted"]:
+			log_event("Defense tried to patch %s — VIRUS RESISTED!" % [resisted_country], "orange")
+			defense_log_event(
+				"! Strain too resistant (adapting strategy)",
+				"ff9933"
+			)
+			show_notification("PATCH RESISTED: " + resisted_country, Color(1.0, 0.6, 0.1))
 	
-	# ── APPLY SUCCESSFUL PATCHES ────────────────────────────────
-	for patched_country in defense_result["patched"]:
-		infected_countries.erase(patched_country)
-		patched_countries.append(patched_country)
-		total_patches += 1
-		defense_log_event("[✓] PATCHED %s!" % [patched_country], "lime")
-		detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
-		_clear_dots_in_country(patched_country)
-		log_event("SECURED: %s — Bayesian AI patched it!" % [patched_country], "green")
-		show_notification("COUNTRY SECURED: " + patched_country, Color(0.2, 0.9, 0.3))
+	# ── APPLY SUCCESSFUL PATCHES (show AI winning) ──────────────
+	if defense_result["patched"].size() > 0:
+		defense_log_event("=== PATCH SUCCESSFUL ===", "00ff66")
+		for patched_country in defense_result["patched"]:
+			infected_countries.erase(patched_country)
+			patched_countries.append(patched_country)
+			total_patches += 1
+			var prob = int(country_detection.get(patched_country, 0.5) * 100)
+			defense_log_event(
+				"[✓] Eliminated %s (confidence: %d%%)" % [patched_country, prob],
+				"00ff99"
+			)
+			detection_level = clampf(detection_level + 0.04, 0.0, 1.0)
+			_clear_dots_in_country(patched_country)
+			log_event("SECURED: %s — Bayesian AI patched it!" % [patched_country], "green")
+			show_notification("COUNTRY SECURED: " + patched_country, Color(0.2, 0.9, 0.3))
 	
+	# ── CONTAINMENT SUCCESS ─────────────────────────────────────
 	if infected_countries.size() == 0:
 		log_event("ALL COUNTRIES PATCHED — spread faster or upgrade!", "red")
 		show_notification("ALL INFECTIONS CLEARED!", Color(1, 0.2, 0.2))
+		defense_log_event("Network secured. All threats eliminated.", "00ffff")
 
 
 func _observe_signal(country: String) -> float:
@@ -944,25 +959,61 @@ func _setup_dynamic_ui():
 func _update_defense_panel():
 	if not status_label:
 		return
+	
 	var det_pct = int(detection_level * 100)
+	var infection_rate = float(infected_countries.size()) / float(TOTAL_COUNTRIES)
+	var threat_level = "LOW"
+	var threat_color = Color(0.4, 1.0, 0.4)
+	
+	# ── ADAPTIVE THREAT ASSESSMENT (based on improved AI logic) ──
+	if infection_rate > 0.6:
+		threat_level = "CRITICAL"
+		threat_color = Color.RED
+	elif infection_rate > 0.4:
+		threat_level = "HIGH"
+		threat_color = Color(1.0, 0.6, 0.0)
+	elif infection_rate > 0.2:
+		threat_level = "MEDIUM"
+		threat_color = Color(1.0, 1.0, 0.3)
+	else:
+		threat_level = "LOW"
+		threat_color = Color(0.4, 1.0, 0.4)
+	
+	# Update threat level label
+	if has_node("CanvasLayer") and $CanvasLayer.get_children().size() > 0:
+		var last_child = $CanvasLayer.get_child($CanvasLayer.get_child_count() - 1)
+		if last_child.has_node("ThreatLevelLabel"):
+			var threat_label = last_child.get_node("ThreatLevelLabel")
+			threat_label.text = threat_level
+			threat_label.add_theme_color_override("font_color", threat_color)
+	
+	# ── AI STATUS BASED ON DETECTION LEVEL ──────────────────────
 	if detection_level >= 0.75:
 		alert_badge.texture = load("res://Assets/HUD_Alert_Critical.png")
-		status_label.text   = "MAX RESPONSE  [%d%%]" % det_pct
+		status_label.text   = "MAX RESPONSE"
 		status_label.add_theme_color_override("font_color", Color.RED)
 	elif detection_level >= 0.50:
 		alert_badge.texture = load("res://Assets/HUD_Alert_High.png")
-		status_label.text   = "ACTIVE HUNTING  [%d%%]" % det_pct
-		status_label.add_theme_color_override("font_color", Color.ORANGE)
+		status_label.text   = "ACTIVE HUNT"
+		status_label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.2))
 	elif detection_level >= 0.20:
 		alert_badge.texture = load("res://Assets/HUD_Alert_Medium.png")
-		status_label.text   = "SCANNING...  [%d%%]" % det_pct
+		status_label.text   = "SCANNING"
 		status_label.add_theme_color_override("font_color", Color.YELLOW)
 	else:
 		alert_badge.texture = load("res://Assets/HUD_Alert_Low.png")
-		status_label.text   = "DORMANT  [%d%%]" % det_pct
-		status_label.add_theme_color_override("font_color", Color.WHITE)
+		status_label.text   = "DORMANT"
+		status_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5))
+	
 	patch_count_label.text = str(total_patches)
 
 func defense_log_event(msg: String, color: String = "white"):
 	if defense_log:
-		defense_log.append_text("[color=%s]> %s[/color]\n" % [color, msg])
+		# Add timestamp-like turn indicator for context
+		var prefix = "[Turn %d] " % turn_count
+		var formatted_msg = prefix + msg
+		defense_log.append_text("[color=%s]%s[/color]\n" % [color, formatted_msg])
+		# Limit log to last 50 lines to avoid performance issues
+		var line_count = defense_log.get_line_count()
+		if line_count > 50:
+			defense_log.text = "\n".join(defense_log.text.split("\n").slice(5))
